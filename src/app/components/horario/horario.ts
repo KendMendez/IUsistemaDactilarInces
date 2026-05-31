@@ -89,14 +89,18 @@ export class Horario implements OnInit {
     });
   }
 
-  delete(id: string) {
-    if (!confirm('¿Eliminar este horario?')) return;
-    this.service.delete(id).subscribe({
+  eliminar(id: string, force = false) {
+    this.service.delete(id, force).subscribe({
       next: () => this.load(),
       error: (err) => {
-        console.error('[Horario] delete error', err);
-        this.submitError = 'Error al eliminar horario';
-        this.cdr.detectChanges();
+        const body = err.error;
+        if (body?.requires_confirmation && confirm(body.msg)) {
+          this.eliminar(id, true);
+        } else {
+          console.error('[Horario] delete error', err);
+          this.submitError = 'Error al eliminar horario';
+          this.cdr.detectChanges();
+        }
       },
     });
   }

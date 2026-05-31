@@ -279,7 +279,7 @@ export class Empleado implements OnInit, OnDestroy {
     if (dedo === 'pulgar') this.pulgarStatus = 'capturing';
     else this.indiceStatus = 'capturing';
 
-    this.huellaService.captureFingerprint().subscribe({
+    this.huellaService.capture().subscribe({
       next: (base64) => {
         const dataUrl = 'data:image/png;base64,' + base64;
         if (dedo === 'pulgar') {

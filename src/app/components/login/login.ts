@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Auth } from '../../services/auth';
-import { Token } from '../../services/token';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -11,46 +11,42 @@ import { Token } from '../../services/token';
   styles: ``,
 })
 export class Login {
-  loginForm!: UntypedFormGroup;
-
+  loginForm: FormGroup;
   error: any = '';
   seeding = false;
 
+  private cdr = inject(ChangeDetectorRef);
+
   constructor(
-    private fb: UntypedFormBuilder,
     private authService: Auth,
-    private tokenService: Token
-  ) {}
-
-  ngOnInit(): void {
-    this.initLoginForm();
-  }
-
-  initLoginForm() {
-    this.loginForm = this.fb.group({
-      cedula: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(50)]]
+    private router: Router
+  ) {
+    this.loginForm = new FormGroup({
+      correo: new FormControl('', [Validators.required, Validators.email]),
+      contraseña: new FormControl('', [Validators.required])
     });
   }
 
   onSubmit() {
+    if (this.loginForm.invalid) return;
     if (this.seeding) return;
 
     this.seeding = true;
     this.error = '';
+    this.cdr.detectChanges();
 
     this.authService.login(this.loginForm.value).subscribe({
-      next: (res: any) => {
-        this.tokenService.handleToken(res.token);
-        this.authService.isAuthenticated();
-        this.loginForm.reset();
+      next: (response) => {
+        if (response.results?.token) {
+          this.router.navigate(['/menu']);
+        }
         this.seeding = false;
       },
       error: (err) => {
-        this.loginForm.get('password')?.setValue('');
-        this.error = err?.error?.message || 'Error al iniciar sesión';
+        this.error = err?.error?.msg || 'Correo o contraseña incorrectos';
+        this.loginForm.get('contraseña')?.setValue('');
         this.seeding = false;
-      }
+      },
     });
   }
 }

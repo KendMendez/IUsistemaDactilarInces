@@ -175,13 +175,17 @@ export class Rol implements OnInit {
     }
   }
 
-  delete(id: string) {
-    if (!confirm('¿Eliminar este rol?')) return;
-    this.service.delete(id).subscribe({
+  eliminar(id: string, force = false) {
+    this.service.delete(id, force).subscribe({
       next: () => this.load(),
       error: (err) => {
-        console.error('[Rol] delete error', err);
-        this.submitError = 'Error al eliminar rol';
+        const body = err.error;
+        if (body?.requires_confirmation && confirm(body.msg)) {
+          this.eliminar(id, true);
+        } else {
+          console.error('[Rol] delete error', err);
+          this.submitError = 'Error al eliminar rol';
+        }
       },
     });
   }

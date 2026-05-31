@@ -39,13 +39,17 @@ export class Asistencia implements OnInit {
     });
   }
 
-  delete(id: string) {
-    if (!confirm('¿Eliminar esta asistencia?')) return;
-    this.service.delete(id).subscribe({
+  eliminar(id: string, force = false) {
+    this.service.delete(id, force).subscribe({
       next: () => this.load(),
       error: (err) => {
-        console.error('[Asistencia] delete error', err);
-        this.error = 'Error al eliminar asistencia';
+        const body = err.error;
+        if (body?.requires_confirmation && confirm(body.msg)) {
+          this.eliminar(id, true);
+        } else {
+          console.error('[Asistencia] delete error', err);
+          this.error = 'Error al eliminar asistencia';
+        }
       },
     });
   }

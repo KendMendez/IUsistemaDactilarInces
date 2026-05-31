@@ -95,13 +95,17 @@ export class Cargo implements OnInit {
     });
   }
 
-  delete(id: string) {
-    if (!confirm('¿Eliminar este cargo?')) return;
-    this.service.delete(id).subscribe({
+  eliminar(id: string, force = false) {
+    this.service.delete(id, force).subscribe({
       next: () => this.load(),
       error: (err) => {
-        console.error('[Cargo] delete error', err);
-        this.submitError = 'Error al eliminar el cargo';
+        const body = err.error;
+        if (body?.requires_confirmation && confirm(body.msg)) {
+          this.eliminar(id, true);
+        } else {
+          console.error('[Cargo] delete error', err);
+          this.submitError = 'Error al eliminar el cargo';
+        }
       },
     });
   }
