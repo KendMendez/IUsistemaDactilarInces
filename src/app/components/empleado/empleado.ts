@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
@@ -20,7 +20,7 @@ function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | 
   templateUrl: './empleado.html',
   styles: ``,
 })
-export class Empleado implements OnInit {
+export class Empleado implements OnInit, OnDestroy {
   list: any[] = [];
   loading = false;
   saving = false;
@@ -72,6 +72,10 @@ export class Empleado implements OnInit {
     this.load();
     this.loadCargos();
     this.loadRoles();
+  }
+
+  ngOnDestroy(): void {
+    this.huellaService.dispose();
   }
 
   get selectedRole(): any {
@@ -267,6 +271,8 @@ export class Empleado implements OnInit {
   }
 
   capturarHuella(dedo: 'pulgar' | 'indice') {
+    if (this.pulgarStatus === 'capturing' || this.indiceStatus === 'capturing') return;
+
     this.huellaError = '';
     this.huellaMensaje = 'Coloque el dedo en el lector...';
 
@@ -351,13 +357,17 @@ export class Empleado implements OnInit {
     });
   }
 
-  delete(id: string) {
-    if (!confirm('¿Eliminar este empleado?')) return;
-    this.service.delete(id).subscribe({
+  eliminar(id: string, force = false) {
+    this.service.delete(id, force).subscribe({
       next: () => this.load(),
       error: (err) => {
-        console.error('[Empleado] delete error', err);
-        this.submitError = 'Error al eliminar empleado';
+        const body = err.error;
+        if (body?.requires_confirmation && confirm(body.msg)) {
+          this.eliminar(id, true);
+        } else {
+          console.error('[Empleado] delete error', err);
+          this.submitError = 'Error al eliminar empleado';
+        }
       },
     });
   }
