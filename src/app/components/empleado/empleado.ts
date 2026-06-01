@@ -75,6 +75,7 @@ export class Empleado implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    console.debug('[Empleado] ngOnDestroy — cleaning up huella service');
     this.huellaService.dispose();
   }
 
@@ -240,6 +241,7 @@ export class Empleado implements OnInit, OnDestroy {
   }
 
   openHuellaModal() {
+    console.debug('[Empleado] openHuellaModal — pulgar done:', !!this.pulgarBase64, 'indice done:', !!this.indiceBase64);
     this.showHuellaModal = true;
     this.pulgarStatus = this.pulgarBase64 ? 'done' : 'pending';
     this.indiceStatus = this.indiceBase64 ? 'done' : 'pending';
@@ -260,6 +262,7 @@ export class Empleado implements OnInit, OnDestroy {
   }
 
   capturarHuella(dedo: 'pulgar' | 'indice') {
+    console.debug('[Empleado] capturarHuella — dedo:', dedo, 'pulgarStatus:', this.pulgarStatus, 'indiceStatus:', this.indiceStatus);
     if (this.pulgarStatus === 'capturing' || this.indiceStatus === 'capturing') return;
 
     this.huellaError = '';
@@ -270,6 +273,7 @@ export class Empleado implements OnInit, OnDestroy {
 
     this.huellaService.capture().subscribe({
       next: (base64) => {
+        console.log('[Empleado] capturarHuella — success, base64 length:', base64?.length);
         const dataUrl = 'data:image/png;base64,' + base64;
         if (dedo === 'pulgar') {
           this.pulgarBase64 = base64;
@@ -283,6 +287,7 @@ export class Empleado implements OnInit, OnDestroy {
         this.huellaMensaje = `Huella de ${dedo === 'pulgar' ? 'pulgar' : 'índice'} capturada correctamente`;
       },
       error: (err) => {
+        console.error('[Empleado] capturarHuella — error:', err);
         if (dedo === 'pulgar') this.pulgarStatus = 'pending';
         else this.indiceStatus = 'pending';
         this.huellaError = typeof err === 'string' ? err : 'Error al capturar huella';
@@ -316,12 +321,21 @@ export class Empleado implements OnInit, OnDestroy {
       data.roleId = '[]';
     }
 
+    console.debug('[Empleado] onSubmit — sending:', {
+      ...data,
+      contraseña: data.contraseña ? '***' : undefined,
+      huella_pulgar: data.huella_pulgar ? '(present len=' + data.huella_pulgar.length + ')' : undefined,
+      huella_indice: data.huella_indice ? '(present len=' + data.huella_indice.length + ')' : undefined,
+      foto: data.foto ? '(present len=' + data.foto.length + ')' : undefined,
+    });
+
     const req = this.editId
       ? this.service.update(this.editId, data)
       : this.service.store(data);
 
     req.pipe(finalize(() => (this.saving = false))).subscribe({
       next: (res: any) => {
+        console.debug('[Empleado] onSubmit — response (next):', res);
         if (res?.error) {
           this.submitError = res.msg || res.message || res.mensaje || 'Error del servidor';
           return;
@@ -330,6 +344,7 @@ export class Empleado implements OnInit, OnDestroy {
         this.load();
       },
       error: (err: any) => {
+        console.error('[Empleado] onSubmit — response (error):', err);
         const body = err.error;
         if (body?.errors) {
           const msgs = Object.entries(body.errors)
@@ -341,7 +356,6 @@ export class Empleado implements OnInit, OnDestroy {
             body?.msg ||
             body?.message ||
             body?.mensaje ||
-            body?.error ||
             err.message ||
             'Error al guardar. Verifique la conexión con el servidor.';
         }
