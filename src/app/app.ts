@@ -2,16 +2,19 @@ import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { Auth } from './services/auth';
+import { KioskoService } from './services/kiosko';
+import { KioskoOverlay } from './components/kiosko-overlay/kiosko-overlay';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, KioskoOverlay],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App {
   protected auth = inject(Auth);
   protected router = inject(Router);
+  protected kiosko = inject(KioskoService);
   isLoggedIn = false;
   pageTitle = 'Dashboard';
   userName = '';
@@ -41,6 +44,8 @@ export class App {
   };
 
   ngOnInit(): void {
+    this.kiosko.init();
+
     this.isLoggedIn = this.auth.isLoggedIn();
 
     if (this.isLoggedIn) {

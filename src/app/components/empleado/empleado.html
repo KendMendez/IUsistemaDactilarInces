@@ -127,7 +127,6 @@
 
         <!-- Row 2: Correo + Teléfono + Sexo -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          @if (!isRoleEmpleado) {
           <div>
             <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Correo <span style="color: #EF4444;">*</span></label>
             <input type="email" formControlName="correo" placeholder="correo@ejemplo.com"
@@ -138,9 +137,8 @@
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('correo') }}</p>
             }
           </div>
-          }
           <div>
-            <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Teléfono</label>
+            <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Teléfono <span style="color: #EF4444;">*</span></label>
             <input type="text" formControlName="telefono" placeholder="0412-1234567"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
@@ -161,7 +159,7 @@
           </div>
         </div>
 
-        <!-- Row 3: Cargo + Contraseña (checkbox) -->
+        <!-- Row 3: Cargo + Contraseña -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div>
             <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Cargo <span style="color: #EF4444;">*</span></label>
@@ -178,7 +176,6 @@
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('id_cargo') }}</p>
             }
           </div>
-          @if (!isRoleEmpleado) {
           <div>
             @if (editId) {
             <div class="flex items-center gap-2 mt-7">
@@ -190,7 +187,7 @@
             @if (!editId || showPassword) {
             <div>
               <label class="block text-sm font-medium mb-1.5" style="color: #374151;">
-                {{ editId ? 'Nueva ' : '' }}Contraseña
+                {{ editId ? 'Nueva ' : '' }}Contraseña <span style="color: #EF4444;">*</span>
               </label>
               <input type="password" formControlName="contraseña" placeholder="••••••••"
                 class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
@@ -202,7 +199,6 @@
             </div>
             }
           </div>
-          }
         </div>
 
         <!-- Separator -->
@@ -281,9 +277,6 @@
           </select>
           @if (fieldInvalid('roleId')) {
           <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('roleId') }}</p>
-          }
-          @if (isRoleEmpleado) {
-          <p class="text-xs mt-1.5" style="color: #94A3B8;">Los campos de correo y contraseña no aplican para el rol Empleado</p>
           }
         </div>
 

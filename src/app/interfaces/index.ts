@@ -41,6 +41,16 @@ export interface AsistenciaData {
   fecha: string;
   hora_entrada: string;
   hora_salida: string;
+  status?: string;
+  tipo_marcacion?: string;
+  motivo_rechazo?: string;
+}
+
+export interface KioskoResponse {
+  error: number;
+  msg: string;
+  tipo?: 'entrada' | 'salida';
+  status?: string;
 }
 
 export interface InasistenciaData {

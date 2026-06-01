@@ -52,7 +52,7 @@ export class Empleado implements OnInit, OnDestroy {
     identificacion: new FormControl('', Validators.required),
     correo: new FormControl('', [Validators.required, Validators.email]),
     contraseña: new FormControl(''),
-    telefono: new FormControl('', venezuelanPhoneValidator),
+    telefono: new FormControl('', [Validators.required, venezuelanPhoneValidator]),
     sexo: new FormControl('M', Validators.required),
     id_cargo: new FormControl('', Validators.required),
     foto: new FormControl(''),
@@ -82,10 +82,6 @@ export class Empleado implements OnInit, OnDestroy {
     const id = this.form.value.roleId;
     if (!id) return null;
     return this.roles.find(r => r.rolId === id) || null;
-  }
-
-  get isRoleEmpleado(): boolean {
-    return this.selectedRole?.role === 'Empleado';
   }
 
   load() {
@@ -196,16 +192,9 @@ export class Empleado implements OnInit, OnDestroy {
   }
 
   onRoleChange() {
-    if (this.isRoleEmpleado) {
-      this.form.get('correo')?.clearValidators();
-      this.form.get('correo')?.setValue('');
-      this.form.get('contraseña')?.clearValidators();
-      this.form.get('contraseña')?.setValue('');
-    } else {
-      this.form.get('correo')?.setValidators([Validators.required, Validators.email]);
-      if (!this.editId || this.showPassword) {
-        this.form.get('contraseña')?.setValidators([Validators.required]);
-      }
+    this.form.get('correo')?.setValidators([Validators.required, Validators.email]);
+    if (!this.editId || this.showPassword) {
+      this.form.get('contraseña')?.setValidators([Validators.required]);
     }
     this.form.get('correo')?.updateValueAndValidity();
     this.form.get('contraseña')?.updateValueAndValidity();
@@ -321,10 +310,6 @@ export class Empleado implements OnInit, OnDestroy {
     if (!data.contraseña) {
       delete data.contraseña;
     }
-    if (this.isRoleEmpleado || !data.correo) {
-      delete data.correo;
-    }
-
     if (data.roleId) {
       data.roleId = JSON.stringify([data.roleId]);
     } else {
@@ -346,13 +331,20 @@ export class Empleado implements OnInit, OnDestroy {
       },
       error: (err: any) => {
         const body = err.error;
-        this.submitError =
-          body?.msg ||
-          body?.message ||
-          body?.mensaje ||
-          body?.error ||
-          err.message ||
-          'Error al guardar. Verifique la conexión con el servidor.';
+        if (body?.errors) {
+          const msgs = Object.entries(body.errors)
+            .map(([field, messages]: [string, any]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('; ');
+          this.submitError = msgs;
+        } else {
+          this.submitError =
+            body?.msg ||
+            body?.message ||
+            body?.mensaje ||
+            body?.error ||
+            err.message ||
+            'Error al guardar. Verifique la conexión con el servidor.';
+        }
       },
     });
   }
