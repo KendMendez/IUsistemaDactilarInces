@@ -39,6 +39,10 @@ export class Asistencia implements OnInit {
     });
   }
 
+  trackById(index: number, item: any): string {
+    return item.asistenciaId || index.toString();
+  }
+
   eliminar(id: string, force = false) {
     this.service.delete(id, force).subscribe({
       next: () => this.load(),

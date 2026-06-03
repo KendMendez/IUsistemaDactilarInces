@@ -337,6 +337,7 @@ export class Empleado implements OnInit, OnDestroy {
       reader.onerror = () => {
         this.saving = false;
         this.submitError = 'No se pudo leer la foto seleccionada.';
+        this.cdr.detectChanges();
       };
       reader.readAsDataURL(this.fotoArchivo);
       return;
@@ -365,7 +366,10 @@ export class Empleado implements OnInit, OnDestroy {
       ? this.service.update(this.editId, data)
       : this.service.store(data);
 
-    req.pipe(finalize(() => (this.saving = false))).subscribe({
+    req.pipe(finalize(() => {
+      this.saving = false;
+      this.cdr.detectChanges();
+    })).subscribe({
       next: (res: any) => {
         if (res?.error) {
           this.submitError = res.msg || res.message || 'Error del servidor';
@@ -393,6 +397,7 @@ export class Empleado implements OnInit, OnDestroy {
       next: () => {
         this.filteredList = this.filteredList.filter(e => e.empleadoId !== id);
         this.list = this.list.filter(e => e.empleadoId !== id);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         const body = err.error;

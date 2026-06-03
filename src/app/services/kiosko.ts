@@ -1,14 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { KIOSKO_API_KEY, URL_API } from '../config/constants';
-
-interface TemplateEntry {
-  id_empleado: string;
-  nombre: string;
-  huella_pulgar: string;
-  huella_indice: string;
-}
 
 interface KioskoStatus {
   visible: boolean;
@@ -20,7 +13,6 @@ interface KioskoStatus {
 @Injectable({ providedIn: 'root' })
 export class KioskoService {
   private apiUrl = `${URL_API}/kiosko`;
-  private templates: TemplateEntry[] = [];
   private api: any = null;
   private listening = false;
 
@@ -37,16 +29,6 @@ export class KioskoService {
   }
 
   async init(): Promise<void> {
-    try {
-      this.templates = await firstValueFrom(
-        this.http.get<{ results: TemplateEntry[] }>(`${this.apiUrl}/templates`, {
-          headers: { 'X-Kiosko-Key': KIOSKO_API_KEY }
-        })
-      ).then(r => r.results || []);
-    } catch {
-      this.templates = [];
-    }
-
     this.startListening();
   }
 
@@ -73,47 +55,33 @@ export class KioskoService {
       const samples = JSON.parse(e.samples);
       if (!samples?.length) return;
 
-      const template = this.F.b64UrlTo64(samples[0]);
+      const png = this.F.b64UrlTo64(samples[0]);
 
       this.statusSubj.next({ visible: true, message: 'Verificando huella...', type: 'info' });
 
-      const match = this.buscarCoincidencia(template);
-
-      if (!match) {
-        setTimeout(() => {
-          this.statusSubj.next({ visible: false, message: '', type: 'info' });
-        }, 3000);
-        this.statusSubj.next({ visible: true, message: 'Huella no reconocida', type: 'error' });
-        return;
-      }
-
-      this.registrarAsistencia(match.id_empleado, match.nombre);
-    } catch {
-      this.statusSubj.next({ visible: true, message: 'Error al procesar la huella', type: 'error' });
+      this.http.post(`${this.apiUrl}/match`, { huella: png }, {
+        headers: { 'X-Kiosko-Key': KIOSKO_API_KEY }
+      }).subscribe({
+        next: (res: any) => {
+          if (res?.match && res.id_empleado) {
+            this.registrarAsistencia(res.id_empleado, res.nombre);
+          } else {
+            this.statusSubj.next({ visible: true, message: 'Huella no reconocida', type: 'error' });
+            setTimeout(() => {
+              this.statusSubj.next({ visible: false, message: '', type: 'info' });
+            }, 3000);
+          }
+        },
+        error: () => {
+          this.statusSubj.next({ visible: true, message: 'Error de conexión', type: 'error' });
+          setTimeout(() => {
+            this.statusSubj.next({ visible: false, message: '', type: 'info' });
+          }, 3000);
+        },
+      });
+    } catch (ex: any) {
+      console.error('[Kiosko] onSample error:', ex?.message || ex);
     }
-  }
-
-  private buscarCoincidencia(template: string): { id_empleado: string; nombre: string } | null {
-    for (const entry of this.templates) {
-      if (this.matchTemplates(template, entry.huella_pulgar) ||
-          this.matchTemplates(template, entry.huella_indice)) {
-        return { id_empleado: entry.id_empleado, nombre: entry.nombre };
-      }
-    }
-    return null;
-  }
-
-  private matchTemplates(a: string, b: string | null): boolean {
-    if (!b) return false;
-    if (a === b) return true;
-
-    if (this.F?.Matcher) {
-      try {
-        return this.F.Matcher.match(a, b);
-      } catch {}
-    }
-
-    return a === b;
   }
 
   private registrarAsistencia(idEmpleado: string, nombre: string): void {
