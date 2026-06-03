@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { HorarioService } from '../../services/horario';
+import { EmpleadoService } from '../../services/empleado';
+
+const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
 
 @Component({
   selector: 'app-horario',
@@ -12,21 +15,30 @@ import { HorarioService } from '../../services/horario';
 })
 export class Horario implements OnInit {
   list: any[] = [];
+  empleados: any[] = [];
+  dias = DIAS;
   loading = false;
   saving = false;
   submitError = '';
   showForm = false;
   editId: string | null = null;
 
+  selectedDias: Record<string, boolean> = {};
+
   form = new FormGroup({
-    hora_entrada: new FormControl('', Validators.required),
-    hora_salida: new FormControl('', Validators.required),
-    descripcion: new FormControl(''),
+    id_empleado: new FormControl('', Validators.required),
+    hora_entrada: new FormControl(''),
+    hora_salida: new FormControl(''),
+    hora_entrada_tolerada: new FormControl('', Validators.required),
+    hora_salida_tolerada: new FormControl('', Validators.required),
   });
 
   private cdr = inject(ChangeDetectorRef);
 
-  constructor(private service: HorarioService) {}
+  constructor(
+    private service: HorarioService,
+    private empleadoService: EmpleadoService,
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -39,8 +51,7 @@ export class Horario implements OnInit {
       this.cdr.detectChanges();
     })).subscribe({
       next: (res) => { this.list = res.results || res.data || []; },
-      error: (err) => {
-        console.error('[Horario] load error', err);
+      error: () => {
         this.submitError = 'Error al cargar horarios';
         this.cdr.detectChanges();
       },
@@ -51,15 +62,28 @@ export class Horario implements OnInit {
     this.showForm = true;
     this.editId = null;
     this.submitError = '';
-    this.form.reset({ hora_entrada: '', hora_salida: '', descripcion: '' });
+    this.selectedDias = {};
+    this.form.reset({ id_empleado: '', hora_entrada: '', hora_salida: '', hora_entrada_tolerada: '', hora_salida_tolerada: '' });
     Object.keys(this.form.controls).forEach(k => this.form.get(k)?.markAsUntouched());
+
+    this.empleadoService.index().pipe(finalize(() => this.cdr.detectChanges())).subscribe({
+      next: (res) => {
+        this.empleados = res.results || res.data || [];
+      },
+    });
+
     if (item) {
-      this.editId = item.id_horario ?? item.id ?? item.horarioId;
+      this.editId = item.horarioId;
       this.form.patchValue({
-        hora_entrada: item.hora_entrada,
-        hora_salida: item.hora_salida,
-        descripcion: item.descripcion || '',
+        id_empleado: item.id_empleado || '',
+        hora_entrada: item.hora_entrada || '',
+        hora_salida: item.hora_salida || '',
+        hora_entrada_tolerada: item.hora_entrada_tolerada || '',
+        hora_salida_tolerada: item.hora_salida_tolerada || '',
       });
+      if (Array.isArray(item.dia)) {
+        item.dia.forEach((d: string) => this.selectedDias[d] = true);
+      }
     }
   }
 
@@ -70,12 +94,24 @@ export class Horario implements OnInit {
     this.submitError = '';
   }
 
+  toggleDia(dia: string) {
+    this.selectedDias[dia] = !this.selectedDias[dia];
+  }
+
+  get diaArray(): string[] {
+    return Object.keys(this.selectedDias).filter(d => this.selectedDias[d]);
+  }
+
+  get diaValido(): boolean {
+    return this.diaArray.length > 0;
+  }
+
   onSubmit() {
     Object.keys(this.form.controls).forEach(k => this.form.get(k)?.markAsTouched());
-    if (this.form.invalid || this.saving) return;
+    if (this.form.invalid || !this.diaValido || this.saving) return;
     this.saving = true;
     this.submitError = '';
-    const data = this.form.value;
+    const data = { ...this.form.value, dia: this.diaArray };
     const req = this.editId ? this.service.update(this.editId, data) : this.service.store(data);
     req.pipe(finalize(() => (this.saving = false))).subscribe({
       next: (res: any) => {
@@ -105,7 +141,16 @@ export class Horario implements OnInit {
     });
   }
 
+  mostrarDias(item: any): string {
+    return Array.isArray(item.dia) ? item.dia.join(', ') : item.dia || '';
+  }
+
+  getEmpleadoNombre(item: any): string {
+    if (item.empleado) return `${item.empleado.nombre} ${item.empleado.apellido}`;
+    return item.id_empleado || '';
+  }
+
   trackById(_i: number, item: any): string {
-    return item.id_horario ?? item.id ?? item.horarioId;
+    return item.horarioId;
   }
 }

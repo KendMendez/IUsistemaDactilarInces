@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormGroup, FormControl, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { EmpleadoService } from '../../services/empleado';
 import { CargoService } from '../../services/cargo';
 import { RolService } from '../../services/rol';
 import { HuellaService } from '../../services/huella';
+import { KioskoService } from '../../services/kiosko';
 
 function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | null {
   if (!control.value) return null;
@@ -16,12 +17,13 @@ function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | 
 
 @Component({
   selector: 'app-empleado',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './empleado.html',
   styles: ``,
 })
 export class Empleado implements OnInit, OnDestroy {
   list: any[] = [];
+  filteredList: any[] = [];
   loading = false;
   saving = false;
   submitError = '';
@@ -31,31 +33,34 @@ export class Empleado implements OnInit, OnDestroy {
 
   cargos: any[] = [];
   roles: any[] = [];
-  fotoPreview: string | null = null;
-  fotoBase64 = '';
+  cargoCollapsed = false;
+  rolesCollapsed = false;
 
+  fotoArchivo: File | null = null;
+  fotoPreview: string | null = null;
+
+  huellasCapturadas: string[] = [];
+  pasoHuella = 0;
   showHuellaModal = false;
-  pulgarStatus: 'pending' | 'capturing' | 'done' = 'pending';
-  indiceStatus: 'pending' | 'capturing' | 'done' = 'pending';
-  pulgarPreview: string | null = null;
-  indicePreview: string | null = null;
-  pulgarBase64 = '';
-  indiceBase64 = '';
-  huellaError = '';
+  huellaCapturando = false;
   huellaMensaje = '';
+  huellaError = '';
 
   showPassword = false;
+  showPasswordText = false;
+
+  searchQuery = '';
+  buscando = false;
 
   form = new FormGroup({
     nombre: new FormControl('', Validators.required),
     apellido: new FormControl('', Validators.required),
-    identificacion: new FormControl('', Validators.required),
+    identificacion: new FormControl('', [Validators.required, Validators.pattern(/^\d+$/)]),
     correo: new FormControl('', [Validators.required, Validators.email]),
     contraseña: new FormControl(''),
     telefono: new FormControl('', [Validators.required, venezuelanPhoneValidator]),
     sexo: new FormControl('M', Validators.required),
     id_cargo: new FormControl('', Validators.required),
-    foto: new FormControl(''),
     roleId: new FormControl(''),
   });
 
@@ -65,7 +70,8 @@ export class Empleado implements OnInit, OnDestroy {
     private service: EmpleadoService,
     private cargoService: CargoService,
     private rolService: RolService,
-    private huellaService: HuellaService
+    private huellaService: HuellaService,
+    private kiosko: KioskoService,
   ) {}
 
   ngOnInit(): void {
@@ -75,14 +81,7 @@ export class Empleado implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    console.debug('[Empleado] ngOnDestroy — cleaning up huella service');
     this.huellaService.dispose();
-  }
-
-  get selectedRole(): any {
-    const id = this.form.value.roleId;
-    if (!id) return null;
-    return this.roles.find(r => r.rolId === id) || null;
   }
 
   load() {
@@ -92,22 +91,11 @@ export class Empleado implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     })).subscribe({
       next: (res) => {
-        const raw = res.results || res.data || res.empleados || [];
-        this.list = (Array.isArray(raw) ? raw : []).map((e: any) => ({
-          empleadoId: e.empleadoId || e.id,
-          nombre: e.nombre,
-          apellido: e.apellido,
-          identificacion: e.identificacion,
-          cargo: e.cargo,
-          correo: e.correo,
-          telefono: e.telefono,
-          sexo: e.sexo,
-          id_cargo: e.id_cargo,
-          rolIds: e.rolIds,
-        }));
+        const raw = res.results || res.data || [];
+        this.list = Array.isArray(raw) ? raw : [];
+        this.filteredList = [...this.list];
       },
-      error: (err) => {
-        console.error('[Empleado] load error', err);
+      error: () => {
         this.submitError = 'Error al cargar empleados';
         this.cdr.detectChanges();
       },
@@ -117,15 +105,40 @@ export class Empleado implements OnInit, OnDestroy {
   loadCargos() {
     this.cargoService.index().subscribe({
       next: (res) => { this.cargos = res.results || []; this.cdr.detectChanges(); },
-      error: (err) => { console.error('[Empleado] loadCargos error', err); this.cdr.detectChanges(); },
     });
   }
 
   loadRoles() {
     this.rolService.index().subscribe({
       next: (res) => { this.roles = res.results || []; this.cdr.detectChanges(); },
-      error: (err) => { console.error('[Empleado] loadRoles error', err); this.cdr.detectChanges(); },
     });
+  }
+
+  onSearch() {
+    const q = this.searchQuery.trim();
+    if (!q) {
+      this.filteredList = [...this.list];
+      return;
+    }
+    this.buscando = true;
+    this.service.search(q).pipe(finalize(() => {
+      this.buscando = false;
+      this.cdr.detectChanges();
+    })).subscribe({
+      next: (res) => {
+        this.filteredList = res.results || [];
+      },
+      error: () => {
+        this.filteredList = [];
+        this.submitError = 'Empleado no encontrado';
+      },
+    });
+  }
+
+  clearSearch() {
+    this.searchQuery = '';
+    this.filteredList = [...this.list];
+    this.submitError = '';
   }
 
   openForm(empleado?: any) {
@@ -133,28 +146,20 @@ export class Empleado implements OnInit, OnDestroy {
     this.editId = empleado?.empleadoId || null;
     this.showPassword = false;
     this.submitError = '';
+    this.fotoArchivo = null;
+    this.fotoPreview = null;
+    this.huellasCapturadas = [];
+    this.pasoHuella = 0;
 
     this.form.reset({
-      nombre: '',
-      apellido: '',
-      identificacion: '',
-      correo: '',
-      contraseña: '',
-      telefono: '',
-      sexo: 'M',
-      id_cargo: '',
-      foto: '',
-      roleId: '',
+      nombre: '', apellido: '', identificacion: '', correo: '',
+      contraseña: '', telefono: '', sexo: 'M', id_cargo: '', roleId: '',
     });
-    this.fotoPreview = null;
-    this.fotoBase64 = '';
-    this.pulgarBase64 = '';
-    this.indiceBase64 = '';
 
     if (!this.editId) {
       this.form.get('correo')?.setValidators([Validators.required, Validators.email]);
       this.form.get('correo')?.updateValueAndValidity();
-      this.form.get('contraseña')?.setValidators([Validators.required]);
+      this.form.get('contraseña')?.setValidators([Validators.required, Validators.minLength(8)]);
       this.form.get('contraseña')?.updateValueAndValidity();
     }
 
@@ -171,13 +176,10 @@ export class Empleado implements OnInit, OnDestroy {
         id_cargo: empleado.id_cargo,
       });
       if (empleado.foto) {
-        this.fotoBase64 = empleado.foto;
         this.fotoPreview = 'data:image/png;base64,' + empleado.foto;
-        this.form.patchValue({ foto: empleado.foto });
       }
       if (empleado.rolIds?.length > 0) {
         this.form.patchValue({ roleId: empleado.rolIds[0] });
-        this.onRoleChange();
       }
     }
   }
@@ -187,18 +189,104 @@ export class Empleado implements OnInit, OnDestroy {
     this.editId = null;
     this.form.reset();
     this.fotoPreview = null;
-    this.fotoBase64 = '';
+    this.fotoArchivo = null;
+    this.huellasCapturadas = [];
+    this.pasoHuella = 0;
     this.showPassword = false;
     this.submitError = '';
   }
 
-  onRoleChange() {
-    this.form.get('correo')?.setValidators([Validators.required, Validators.email]);
-    if (!this.editId || this.showPassword) {
-      this.form.get('contraseña')?.setValidators([Validators.required]);
+  limpiarFormulario() {
+    const editId = this.editId;
+    this.backToList();
+    if (editId) {
+      this.openForm(this.list.find(e => e.empleadoId === editId));
+    } else {
+      this.openForm();
     }
-    this.form.get('correo')?.updateValueAndValidity();
-    this.form.get('contraseña')?.updateValueAndValidity();
+  }
+
+  onFotoChange(event: any) {
+    const file = event.target?.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      this.submitError = 'La foto no debe superar los 2MB';
+      return;
+    }
+
+    this.fotoArchivo = file;
+    this.fotoPreview = URL.createObjectURL(file);
+  }
+
+  private autoAdvanceTimer: any = null;
+
+  openHuellaModal() {
+    this.kiosko.pause();
+    this.showHuellaModal = true;
+    this.huellasCapturadas = [];
+    this.huellaError = '';
+    this.huellaMensaje = 'Coloque su dedo pulgar en el lector...';
+    this.huellaCapturando = true;
+    this.pasoHuella = 0;
+    this.cdr.detectChanges();
+    this.iniciarCapturaDedo(0);
+  }
+
+  iniciarCapturaDedo(index: number) {
+    this.pasoHuella = index;
+    this.huellaCapturando = true;
+    this.huellaError = '';
+    const nombreDedo = index === 0 ? 'pulgar' : 'índice';
+    this.huellaMensaje = `Coloque su dedo ${nombreDedo} en el lector...`;
+    this.cdr.detectChanges();
+
+    this.huellaService.capture().subscribe({
+      next: (base64) => {
+        if (!this.showHuellaModal) return;
+        this.huellasCapturadas[index] = base64;
+        this.huellaCapturando = false;
+        const nombres = ['pulgar', 'índice'];
+        this.huellaMensaje = `Huella ${nombres[index]} tomada correctamente.`;
+        this.cdr.detectChanges();
+
+        if (index === 0) {
+          this.autoAdvanceTimer = setTimeout(() => {
+            if (this.showHuellaModal && this.huellasCapturadas.length === 1 && !this.huellaCapturando) {
+              this.continuarCaptura();
+            }
+          }, 2000);
+        }
+      },
+      error: (err) => {
+        if (!this.showHuellaModal) return;
+        this.huellaError = typeof err === 'string' ? err : 'Error al capturar huella';
+        this.huellaCapturando = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  continuarCaptura() {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+    if (this.huellaCapturando || this.huellasCapturadas.length !== 1) return;
+    this.iniciarCapturaDedo(1);
+  }
+
+  closeHuellaModal() {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
+    this.huellaService.cancelCapture();
+    this.showHuellaModal = false;
+    this.huellaError = '';
+    this.huellaMensaje = '';
+    this.huellaCapturando = false;
+    this.kiosko.resume();
   }
 
   fieldInvalid(field: string): boolean {
@@ -212,21 +300,9 @@ export class Empleado implements OnInit, OnDestroy {
     if (ctrl.errors['required']) return 'Campo requerido';
     if (ctrl.errors['email']) return 'Correo electrónico inválido';
     if (ctrl.errors['phone']) return ctrl.errors['phone'];
+    if (ctrl.errors['pattern']) return 'Solo se permiten números';
+    if (ctrl.errors['minlength']) return 'Mínimo ' + ctrl.errors['minlength'].requiredLength + ' caracteres';
     return 'Campo inválido';
-  }
-
-  onFotoChange(event: any) {
-    const file = event.target?.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      this.fotoPreview = dataUrl;
-      this.fotoBase64 = dataUrl.split(',')[1] || '';
-      this.form.patchValue({ foto: this.fotoBase64 });
-    };
-    reader.readAsDataURL(file);
   }
 
   togglePassword() {
@@ -235,99 +311,55 @@ export class Empleado implements OnInit, OnDestroy {
       this.form.patchValue({ contraseña: '' });
       this.form.get('contraseña')?.clearValidators();
     } else {
-      this.form.get('contraseña')?.setValidators([Validators.required]);
+      this.form.get('contraseña')?.setValidators([Validators.required, Validators.minLength(8)]);
     }
     this.form.get('contraseña')?.updateValueAndValidity();
   }
 
-  openHuellaModal() {
-    console.debug('[Empleado] openHuellaModal — pulgar done:', !!this.pulgarBase64, 'indice done:', !!this.indiceBase64);
-    this.showHuellaModal = true;
-    this.pulgarStatus = this.pulgarBase64 ? 'done' : 'pending';
-    this.indiceStatus = this.indiceBase64 ? 'done' : 'pending';
-    this.pulgarPreview = null;
-    this.indicePreview = null;
-    this.huellaError = '';
-    this.huellaMensaje = '';
-  }
-
-  closeHuellaModal() {
-    this.showHuellaModal = false;
-    this.huellaError = '';
-    this.huellaMensaje = '';
-  }
-
-  guardarHuellas() {
-    this.closeHuellaModal();
-  }
-
-  capturarHuella(dedo: 'pulgar' | 'indice') {
-    console.debug('[Empleado] capturarHuella — dedo:', dedo, 'pulgarStatus:', this.pulgarStatus, 'indiceStatus:', this.indiceStatus);
-    if (this.pulgarStatus === 'capturing' || this.indiceStatus === 'capturing') return;
-
-    this.huellaError = '';
-    this.huellaMensaje = 'Coloque el dedo en el lector...';
-
-    if (dedo === 'pulgar') this.pulgarStatus = 'capturing';
-    else this.indiceStatus = 'capturing';
-
-    this.huellaService.capture().subscribe({
-      next: (base64) => {
-        console.log('[Empleado] capturarHuella — success, base64 length:', base64?.length);
-        const dataUrl = 'data:image/png;base64,' + base64;
-        if (dedo === 'pulgar') {
-          this.pulgarBase64 = base64;
-          this.pulgarPreview = dataUrl;
-          this.pulgarStatus = 'done';
-        } else {
-          this.indiceBase64 = base64;
-          this.indicePreview = dataUrl;
-          this.indiceStatus = 'done';
-        }
-        this.huellaMensaje = `Huella de ${dedo === 'pulgar' ? 'pulgar' : 'índice'} capturada correctamente`;
-      },
-      error: (err) => {
-        console.error('[Empleado] capturarHuella — error:', err);
-        if (dedo === 'pulgar') this.pulgarStatus = 'pending';
-        else this.indiceStatus = 'pending';
-        this.huellaError = typeof err === 'string' ? err : 'Error al capturar huella';
-        this.huellaMensaje = '';
-      },
-    });
+  togglePasswordText() {
+    this.showPasswordText = !this.showPasswordText;
   }
 
   onSubmit() {
     Object.keys(this.form.controls).forEach(k => this.form.get(k)?.markAsTouched());
-
-    if (this.form.invalid) return;
-    if (this.saving) return;
-
+    if (this.form.invalid || this.saving) return;
     this.saving = true;
     this.submitError = '';
 
-    const data: any = {
-      ...this.form.value,
-      foto: this.fotoBase64 || undefined,
-      huella_pulgar: this.pulgarBase64 || undefined,
-      huella_indice: this.indiceBase64 || undefined,
-    };
+    const data: any = { ...this.form.value };
+
+    if (this.fotoArchivo) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        data.foto = (reader.result as string).split(',')[1] || '';
+        this.enviarDatos(data);
+      };
+      reader.onerror = () => {
+        this.saving = false;
+        this.submitError = 'No se pudo leer la foto seleccionada.';
+      };
+      reader.readAsDataURL(this.fotoArchivo);
+      return;
+    }
+
+    this.enviarDatos(data);
+  }
+
+  private enviarDatos(data: any) {
+    if (this.huellasCapturadas.length > 0) {
+      data.huella_pulgar = this.huellasCapturadas[0] || undefined;
+      data.huella_indice = this.huellasCapturadas[1] || undefined;
+    }
 
     if (!data.contraseña) {
       delete data.contraseña;
     }
+
     if (data.roleId) {
       data.roleId = JSON.stringify([data.roleId]);
     } else {
-      data.roleId = '[]';
+      delete data.roleId;
     }
-
-    console.debug('[Empleado] onSubmit — sending:', {
-      ...data,
-      contraseña: data.contraseña ? '***' : undefined,
-      huella_pulgar: data.huella_pulgar ? '(present len=' + data.huella_pulgar.length + ')' : undefined,
-      huella_indice: data.huella_indice ? '(present len=' + data.huella_indice.length + ')' : undefined,
-      foto: data.foto ? '(present len=' + data.foto.length + ')' : undefined,
-    });
 
     const req = this.editId
       ? this.service.update(this.editId, data)
@@ -335,16 +367,14 @@ export class Empleado implements OnInit, OnDestroy {
 
     req.pipe(finalize(() => (this.saving = false))).subscribe({
       next: (res: any) => {
-        console.debug('[Empleado] onSubmit — response (next):', res);
         if (res?.error) {
-          this.submitError = res.msg || res.message || res.mensaje || 'Error del servidor';
+          this.submitError = res.msg || res.message || 'Error del servidor';
           return;
         }
         this.backToList();
         this.load();
       },
       error: (err: any) => {
-        console.error('[Empleado] onSubmit — response (error):', err);
         const body = err.error;
         if (body?.errors) {
           const msgs = Object.entries(body.errors)
@@ -352,12 +382,7 @@ export class Empleado implements OnInit, OnDestroy {
             .join('; ');
           this.submitError = msgs;
         } else {
-          this.submitError =
-            body?.msg ||
-            body?.message ||
-            body?.mensaje ||
-            err.message ||
-            'Error al guardar. Verifique la conexión con el servidor.';
+          this.submitError = body?.msg || body?.message || err.message || 'Error al guardar.';
         }
       },
     });
@@ -365,17 +390,50 @@ export class Empleado implements OnInit, OnDestroy {
 
   eliminar(id: string, force = false) {
     this.service.delete(id, force).subscribe({
-      next: () => this.load(),
+      next: () => {
+        this.filteredList = this.filteredList.filter(e => e.empleadoId !== id);
+        this.list = this.list.filter(e => e.empleadoId !== id);
+      },
       error: (err) => {
         const body = err.error;
         if (body?.requires_confirmation && confirm(body.msg)) {
           this.eliminar(id, true);
         } else {
-          console.error('[Empleado] delete error', err);
           this.submitError = 'Error al eliminar empleado';
         }
       },
     });
+  }
+
+  getCargoDisplay(item: any): string {
+    if (!item.cargo) return '—';
+    return typeof item.cargo === 'string' ? item.cargo : (item.cargo.cargo || '—');
+  }
+
+  toggleCargo() { this.cargoCollapsed = !this.cargoCollapsed; }
+
+  toggleRol() { this.rolesCollapsed = !this.rolesCollapsed; }
+
+  selectCargo(id: string) {
+    this.form.patchValue({ id_cargo: id });
+    this.cargoCollapsed = false;
+  }
+
+  selectRol(id: string) {
+    this.form.patchValue({ roleId: id });
+    this.rolesCollapsed = false;
+  }
+
+  getCargoName(id: string | null | undefined): string {
+    if (!id) return 'Seleccionar cargo...';
+    const c = this.cargos.find(x => x.cargoId === id);
+    return c ? c.cargo : 'Seleccionar cargo...';
+  }
+
+  getRolName(id: string | null | undefined): string {
+    if (!id) return 'Seleccionar rol...';
+    const r = this.roles.find(x => x.rolId === id);
+    return r ? r.role : 'Seleccionar rol...';
   }
 
   trackById(_index: number, item: any): string {

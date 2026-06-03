@@ -5,6 +5,7 @@ import { Cargo } from './components/cargo/cargo';
 import { Empleado } from './components/empleado/empleado';
 import { Rol } from './components/rol/rol';
 import { RolePrivilegio } from './components/role-privilegio/role-privilegio';
+import { Aprobaciones } from './components/aprobaciones/aprobaciones';
 import { Asistencia } from './components/asistencia/asistencia';
 import { Inasistencia } from './components/inasistencia/inasistencia';
 import { Horario } from './components/horario/horario';
@@ -19,6 +20,7 @@ export const routes: Routes = [
   { path: 'roles', component: Rol, canActivate: [authGuard] },
   { path: 'role-privilegios', component: RolePrivilegio, canActivate: [authGuard] },
   { path: 'asistencias', component: Asistencia, canActivate: [authGuard] },
+  { path: 'aprobaciones', component: Aprobaciones, canActivate: [authGuard] },
   { path: 'inasistencias', component: Inasistencia, canActivate: [authGuard] },
   { path: 'horarios', component: Horario, canActivate: [authGuard] },
   { path: 'feriados', component: Feriado, canActivate: [authGuard] },

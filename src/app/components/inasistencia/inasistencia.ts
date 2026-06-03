@@ -12,7 +12,7 @@ import { InasistenciaService } from '../../services/inasistencia';
 export class Inasistencia implements OnInit {
   list: any[] = [];
   loading = false;
-  error = '';
+  submitError = '';
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -28,15 +28,17 @@ export class Inasistencia implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     })).subscribe({
-      next: (res) => {
-        this.list = res.results || [];
-      },
-      error: (err) => {
-        console.error('[Inasistencia] load error', err);
-        this.error = 'Error al cargar inasistencias';
+      next: (res) => { this.list = res.results || res.data || []; },
+      error: () => {
+        this.submitError = 'Error al cargar inasistencias';
         this.cdr.detectChanges();
       },
     });
+  }
+
+  getEmpleadoNombre(item: any): string {
+    if (item.empleado) return `${item.empleado.nombre} ${item.empleado.apellido}`;
+    return item.id_empleado || '';
   }
 
   eliminar(id: string, force = false) {
@@ -48,9 +50,14 @@ export class Inasistencia implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Inasistencia] delete error', err);
-          this.error = 'Error al eliminar inasistencia';
+          this.submitError = 'Error al eliminar inasistencia';
+          this.cdr.detectChanges();
         }
       },
     });
+  }
+
+  trackById(_i: number, item: any): string {
+    return item.inasistenciaId;
   }
 }

@@ -13,10 +13,6 @@ export class AsistenciaService {
     return this.http.get(`${this.apiUrl}/index`);
   }
 
-  showById(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/showById/${id}`);
-  }
-
   store(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/store`, data);
   }
@@ -27,5 +23,17 @@ export class AsistenciaService {
 
   delete(id: string, force = false): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}/delete${force ? '?force=1' : ''}`);
+  }
+
+  pending(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/pending`);
+  }
+
+  approve(id: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/approve`, {});
+  }
+
+  reject(id: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}/reject`, {});
   }
 }

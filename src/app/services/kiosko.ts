@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
-import { URL_API } from '../config/constants';
+import { KIOSKO_API_KEY, URL_API } from '../config/constants';
 
 interface TemplateEntry {
   id_empleado: string;
@@ -39,7 +39,9 @@ export class KioskoService {
   async init(): Promise<void> {
     try {
       this.templates = await firstValueFrom(
-        this.http.get<{ results: TemplateEntry[] }>(`${this.apiUrl}/templates`)
+        this.http.get<{ results: TemplateEntry[] }>(`${this.apiUrl}/templates`, {
+          headers: { 'X-Kiosko-Key': KIOSKO_API_KEY }
+        })
       ).then(r => r.results || []);
     } catch {
       this.templates = [];
@@ -115,7 +117,9 @@ export class KioskoService {
   }
 
   private registrarAsistencia(idEmpleado: string, nombre: string): void {
-    this.http.post(`${this.apiUrl}/verificar`, { id_empleado: idEmpleado }).subscribe({
+    this.http.post(`${this.apiUrl}/verificar`, { id_empleado: idEmpleado }, {
+      headers: { 'X-Kiosko-Key': KIOSKO_API_KEY }
+    }).subscribe({
       next: (res: any) => {
         if (res?.error) {
           this.statusSubj.next({ visible: true, message: res.msg || 'Error al registrar', type: 'error' });
@@ -146,5 +150,21 @@ export class KioskoService {
       this.api?.webChannel?.disconnect();
     } catch {}
     this.api = null;
+  }
+
+  pause(): void {
+    this.listening = false;
+    try {
+      this.api?.webChannel?.disconnect();
+    } catch {}
+    try {
+      this.api?.stopAcquisition();
+    } catch {}
+    this.api = null;
+  }
+
+  resume(): void {
+    if (this.listening) return;
+    this.startListening();
   }
 }

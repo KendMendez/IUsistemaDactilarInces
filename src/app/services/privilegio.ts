@@ -13,10 +13,6 @@ export class PrivilegioService {
     return this.http.get(`${this.apiUrl}/index`);
   }
 
-  showById(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/showById/${id}`);
-  }
-
   store(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/store`, data);
   }

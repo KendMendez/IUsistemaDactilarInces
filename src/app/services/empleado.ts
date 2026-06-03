@@ -13,8 +13,8 @@ export class EmpleadoService {
     return this.http.get(`${this.apiUrl}/index`);
   }
 
-  showById(id: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/showById/${id}`);
+  search(identificacion: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/search/${identificacion}`);
   }
 
   store(data: any): Observable<any> {

@@ -1,19 +1,11 @@
-<!-- ===================== LIST VIEW ===================== -->
 @if (!showForm) {
+
 <div class="p-6">
   <div class="max-w-7xl mx-auto">
 
-    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold" style="color: #1E293B;">Empleados</h1>
       <div class="flex items-center gap-2">
-        <button (click)="load()" [disabled]="loading" class="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all hover:bg-gray-50 disabled:opacity-50"
-          style="border-color: #E2E8F0; color: #475569;">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
-          </svg>
-          Actualizar
-        </button>
         <button (click)="openForm()" class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium shadow-sm hover:shadow-md transition-all active:scale-[0.97]"
           style="background: #003DA5;">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
@@ -22,83 +14,129 @@
       </div>
     </div>
 
-    <!-- Table card -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      @if (loading) {
-      <div class="flex flex-col items-center py-12">
+    <div class="mb-5">
+      <div class="flex items-center gap-3">
+        <div class="relative flex-1 max-w-md">
+          <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Buscar por cédula..."
+            class="w-full px-4 py-2.5 pl-10 rounded-lg border text-sm outline-none transition-all"
+            style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;">
+          <svg class="w-4 h-4 absolute left-3 top-3" style="color: #94A3B8;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+        </div>
+        <button (click)="onSearch()" [disabled]="buscando"
+          class="px-4 py-2.5 rounded-lg text-white text-sm font-medium transition-all disabled:opacity-50"
+          style="background: #003DA5;">
+          Buscar
+        </button>
+        @if (searchQuery) {
+          <button (click)="clearSearch()" class="px-4 py-2.5 rounded-lg text-sm font-medium border transition-all hover:bg-gray-50"
+            style="border-color: #E2E8F0; color: #475569;">
+            Limpiar
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (loading) {
+      <div class="flex flex-col items-center py-16">
         <div class="w-8 h-8 border-2 rounded-full animate-spin" style="border-color: #E2E8F0; border-top-color: #003DA5;"></div>
         <p class="mt-3 text-sm" style="color: #94A3B8;">Cargando empleados...</p>
       </div>
-      } @else if (list.length === 0) {
-      <div class="text-center py-12" style="color: #94A3B8;">
+    } @else if (filteredList.length === 0) {
+      <div class="text-center py-16" style="color: #94A3B8;">
         <p class="text-base">No hay empleados registrados</p>
-        <button (click)="openForm()" class="mt-3 text-sm font-medium hover:underline" style="color: #003DA5;">Agregar el primero</button>
+        @if (!searchQuery) {
+          <button (click)="openForm()" class="mt-3 text-sm font-medium hover:underline" style="color: #003DA5;">Agregar el primero</button>
+        }
       </div>
-      } @else {
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr style="background: #F8FAFC; color: #64748B;">
-              <th class="text-left px-4 py-3 font-semibold">#</th>
-              <th class="text-left px-4 py-3 font-semibold">Nombre</th>
-              <th class="text-left px-4 py-3 font-semibold">Identificación</th>
-              <th class="text-left px-4 py-3 font-semibold">Cargo</th>
-              <th class="text-left px-4 py-3 font-semibold">Correo</th>
-              <th class="text-right px-4 py-3 font-semibold">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of list; track trackById($index, item); let i = $index) {
-            <tr class="border-t border-gray-100 hover:bg-blue-50/30 transition-colors">
-              <td class="px-4 py-3" style="color: #94A3B8;">{{ i + 1 }}</td>
-              <td class="px-4 py-3 font-medium" style="color: #1E293B;">{{ item.nombre }} {{ item.apellido }}</td>
-              <td class="px-4 py-3" style="color: #475569;">{{ item.identificacion }}</td>
-              <td class="px-4 py-3" style="color: #475569;">{{ item.cargo }}</td>
-              <td class="px-4 py-3" style="color: #475569;">{{ item.correo }}</td>
-              <td class="px-4 py-3 text-right">
-                <button (click)="openForm(item)" class="p-1.5 rounded-lg hover:bg-blue-50 transition-colors" title="Editar" style="color: #003DA5;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                </button>
-                <button (click)="eliminar(item.empleadoId || item.id)" class="p-1.5 rounded-lg hover:bg-red-50 transition-colors ml-1" title="Eliminar" style="color: #EF4444;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-                </button>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
+    } @else {
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @for (item of filteredList; track trackById($index, item)) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+            <div class="p-5">
+              <div class="flex items-start gap-4">
+                <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 border" style="background: #F8FAFC; border-color: #E2E8F0;">
+                  @if (item.foto) {
+                    <img [src]="'data:image/png;base64,' + item.foto" class="w-full h-full object-cover">
+                  } @else {
+                    <div class="w-full h-full flex items-center justify-center text-xl" style="color: #94A3B8;">
+                      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                      </svg>
+                    </div>
+                  }
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-base truncate" style="color: #1E293B;">{{ item.nombre }} {{ item.apellido }}</h3>
+                  <p class="text-xs mt-0.5" style="color: #64748B;">{{ getCargoDisplay(item) }}</p>
+                </div>
+              </div>
+              <div class="mt-4 space-y-1.5 text-xs" style="color: #475569;">
+                <div class="flex justify-between">
+                  <span style="color: #94A3B8;">Cédula:</span>
+                  <span class="font-medium" style="color: #1E293B;">{{ item.identificacion }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span style="color: #94A3B8;">Correo:</span>
+                  <span class="truncate ml-2">{{ item.correo }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span style="color: #94A3B8;">Teléfono:</span>
+                  <span>{{ item.telefono || '—' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span style="color: #94A3B8;">Sexo:</span>
+                  <span>{{ item.sexo === 'M' ? 'Masculino' : 'Femenino' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex border-t" style="border-color: #F1F5F9;">
+              <button (click)="openForm(item)" class="flex-1 py-2.5 text-sm font-medium hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5"
+                style="color: #003DA5;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                Editar
+              </button>
+              <button (click)="eliminar(item.empleadoId)" class="flex-1 py-2.5 text-sm font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-1.5"
+                style="color: #EF4444;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        }
       </div>
-      }
-    </div>
+    }
   </div>
 </div>
+
 }
 
-<!-- ===================== FORM VIEW ===================== -->
 @if (showForm) {
 <div class="p-6">
   <div class="max-w-4xl mx-auto">
 
-    <!-- Header -->
     <div class="flex items-center gap-4 mb-6">
       <button (click)="backToList()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors" style="color: #64748B;">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></svg>
       </button>
       <h1 class="text-xl font-bold" style="color: #1E293B;">{{ editId ? 'Editar Empleado' : 'Nuevo Empleado' }}</h1>
+      <button type="button" (click)="limpiarFormulario()" class="ml-auto px-4 py-2 rounded-lg text-sm font-medium border transition-all hover:bg-gray-50"
+        style="border-color: #E2E8F0; color: #475569;">
+        Limpiar
+      </button>
     </div>
 
-    <!-- Form card -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
 
-        <!-- Row 1: Nombre + Apellido + Identificación -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div>
             <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Nombre <span style="color: #EF4444;">*</span></label>
             <input type="text" formControlName="nombre" placeholder="Nombre"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('nombre')?.invalid && form.get('nombre')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('nombre') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
             @if (fieldInvalid('nombre')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('nombre') }}</p>
             }
@@ -108,7 +146,7 @@
             <input type="text" formControlName="apellido" placeholder="Apellido"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('apellido')?.invalid && form.get('apellido')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('apellido') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
             @if (fieldInvalid('apellido')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('apellido') }}</p>
             }
@@ -118,21 +156,20 @@
             <input type="text" formControlName="identificacion" placeholder="V-12345678"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('identificacion')?.invalid && form.get('identificacion')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('identificacion') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
             @if (fieldInvalid('identificacion')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('identificacion') }}</p>
             }
           </div>
         </div>
 
-        <!-- Row 2: Correo + Teléfono + Sexo -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div>
             <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Correo <span style="color: #EF4444;">*</span></label>
             <input type="email" formControlName="correo" placeholder="correo@ejemplo.com"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('correo')?.invalid && form.get('correo')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('correo') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
             @if (fieldInvalid('correo')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('correo') }}</p>
             }
@@ -142,7 +179,7 @@
             <input type="text" formControlName="telefono" placeholder="0412-1234567"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('telefono')?.invalid && form.get('telefono')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('telefono') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
             @if (fieldInvalid('telefono')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('telefono') }}</p>
             }
@@ -152,26 +189,36 @@
             <select formControlName="sexo"
               class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
               style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('sexo')?.invalid && form.get('sexo')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              [class]="fieldInvalid('sexo') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
               <option value="M">Masculino</option>
               <option value="F">Femenino</option>
             </select>
           </div>
         </div>
 
-        <!-- Row 3: Cargo + Contraseña -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div>
             <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Cargo <span style="color: #EF4444;">*</span></label>
-            <select formControlName="id_cargo"
-              class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
-              style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-              [class]="form.get('id_cargo')?.invalid && form.get('id_cargo')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
-              <option value="">Seleccione un cargo</option>
-              @for (c of cargos; track c.id_cargo ?? c.id ?? c.cargoId) {
-              <option [value]="c.id_cargo ?? c.id ?? c.cargoId">{{ c.cargo }}</option>
+            <div class="relative">
+              <button type="button" (click)="toggleCargo()"
+                class="w-full px-3.5 py-2.5 rounded-lg border text-sm text-left flex items-center justify-between outline-none cursor-pointer"
+                style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;">
+                <span>{{ getCargoName(form.value.id_cargo) }}</span>
+                <svg class="w-4 h-4 transition-transform" [class]="cargoCollapsed ? 'rotate-180' : ''" style="color: #94A3B8;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+              </button>
+              @if (cargoCollapsed) {
+              <div class="absolute z-10 mt-1 w-full border rounded-lg overflow-hidden" style="background: white; border-color: #E2E8F0; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                @for (c of cargos; track c.cargoId) {
+                  <div class="px-3.5 py-2 text-sm cursor-pointer hover:bg-blue-50 transition-colors"
+                    [class]="form.value.id_cargo === c.cargoId ? 'bg-blue-50 font-medium' : ''"
+                    style="color: #1E293B;"
+                    (click)="selectCargo(c.cargoId)">
+                    {{ c.cargo }}
+                  </div>
+                }
+              </div>
               }
-            </select>
+            </div>
             @if (fieldInvalid('id_cargo')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('id_cargo') }}</p>
             }
@@ -189,10 +236,20 @@
               <label class="block text-sm font-medium mb-1.5" style="color: #374151;">
                 {{ editId ? 'Nueva ' : '' }}Contraseña <span style="color: #EF4444;">*</span>
               </label>
-              <input type="password" formControlName="contraseña" placeholder="••••••••"
-                class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
-                style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-                [class]="form.get('contraseña')?.invalid && form.get('contraseña')?.touched ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+              <div class="relative">
+                <input [type]="showPasswordText ? 'text' : 'password'" formControlName="contraseña" placeholder="••••••••"
+                  class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all pr-10"
+                  style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
+                  [class]="fieldInvalid('contraseña') ? '!border-red-400 !bg-red-50' : 'focus:!border-[#003DA5] focus:!ring-2 focus:!ring-[#003DA5]/20'">
+                <button type="button" (click)="togglePasswordText()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  style="color: #94A3B8;">
+                  @if (showPasswordText) {
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                  } @else {
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                  }
+                </button>
+              </div>
             @if (fieldInvalid('contraseña')) {
             <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('contraseña') }}</p>
             }
@@ -201,92 +258,78 @@
           </div>
         </div>
 
-        <!-- Separator -->
         <hr class="my-6" style="border-color: #F1F5F9;">
 
-        <!-- Photo -->
         <div class="mb-6">
           <label class="block text-sm font-medium mb-3" style="color: #374151;">Foto</label>
           <div class="flex items-center gap-5">
-            <div class="w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style="border-color: #E2E8F0; background: #F8FAFC;">
+            <label class="w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer"
+              style="border-color: #E2E8F0; background: #F8FAFC;">
               @if (fotoPreview) {
               <img [src]="fotoPreview" class="w-full h-full object-cover">
               } @else {
-              <svg class="w-8 h-8" style="color: #CBD5E1;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" /></svg>
+              <svg class="w-8 h-8" style="color: #CBD5E1;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0 0 22.5 18.75V5.25A2.25 2.25 0 0 0 20.25 3H3.75A2.25 2.25 0 0 0 1.5 5.25v13.5A2.25 2.25 0 0 0 3.75 21Z" />
+              </svg>
               }
-            </div>
-            <label class="px-4 py-2 rounded-lg border text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors" style="border-color: #E2E8F0; color: #475569;">
-              Seleccionar archivo
               <input type="file" accept="image/*" (change)="onFotoChange($event)" class="hidden">
             </label>
+            <span class="text-xs" style="color: #94A3B8;">Máximo 2MB. PNG, JPG o GIF.</span>
           </div>
         </div>
 
-        <!-- Fingerprints -->
         <div class="mb-6">
           <label class="block text-sm font-medium mb-3" style="color: #374151;">Huellas Dactilares</label>
           <div class="p-4 rounded-lg border" style="background: #F8FAFC; border-color: #E2E8F0;">
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
               <div class="flex items-center gap-2 text-sm">
-                <span>👍 Pulgar:</span>
-                @if (pulgarBase64) {
-                <span class="flex items-center gap-1 font-medium" style="color: #16A34A;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                  Capturada
-                </span>
+                <span>Huellas capturadas:</span>
+                @if (huellasCapturadas.length === 0) {
+                  <span class="text-xs" style="color: #94A3B8;">Ninguna</span>
                 } @else {
-                <span class="flex items-center gap-1" style="color: #94A3B8;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                  Pendiente
-                </span>
-                }
-              </div>
-              <div class="flex items-center gap-2 text-sm">
-                <span>👆 Índice:</span>
-                @if (indiceBase64) {
-                <span class="flex items-center gap-1 font-medium" style="color: #16A34A;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                  Capturada
-                </span>
-                } @else {
-                <span class="flex items-center gap-1" style="color: #94A3B8;">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                  Pendiente
-                </span>
+                  <span class="text-xs font-medium" style="color: #16A34A;">
+                    {{ huellasCapturadas.length }}/2
+                  </span>
                 }
               </div>
               <button type="button" (click)="openHuellaModal()" class="ml-auto px-3.5 py-2 rounded-lg text-white text-sm font-medium shadow-sm hover:shadow-md transition-all"
                 style="background: #003DA5;">
-                ✚ Agregar Huellas
+                Capturar Huellas
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Rol -->
         <div class="mb-6">
           <label class="block text-sm font-medium mb-1.5" style="color: #374151;">Rol <span style="color: #EF4444;">*</span></label>
-          <select formControlName="roleId" (change)="onRoleChange()"
-            class="w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none transition-all"
-            style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;"
-            [class]="fieldInvalid('roleId') ? '!border-red-400 !bg-red-50' : ''">
-            <option value="">Seleccione un rol</option>
-            @for (rol of roles; track rol.rolId) {
-            <option [value]="rol.rolId">{{ rol.role }}</option>
+          <div class="relative">
+            <button type="button" (click)="toggleRol()"
+              class="w-full px-3.5 py-2.5 rounded-lg border text-sm text-left flex items-center justify-between outline-none cursor-pointer"
+              style="background: #F8FAFC; border-color: #E2E8F0; color: #1E293B;">
+              <span>{{ getRolName(form.value.roleId) }}</span>
+              <svg class="w-4 h-4 transition-transform" [class]="rolesCollapsed ? 'rotate-180' : ''" style="color: #94A3B8;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+            </button>
+            @if (rolesCollapsed) {
+            <div class="absolute z-10 mt-1 w-full border rounded-lg overflow-hidden" style="background: white; border-color: #E2E8F0; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              @for (rol of roles; track rol.rolId) {
+                <div class="px-3.5 py-2 text-sm cursor-pointer hover:bg-blue-50 transition-colors"
+                  [class]="form.value.roleId === rol.rolId ? 'bg-blue-50 font-medium' : ''"
+                  style="color: #1E293B;"
+                  (click)="selectRol(rol.rolId)">
+                  {{ rol.role }}
+                </div>
+              }
+            </div>
             }
-          </select>
-          @if (fieldInvalid('roleId')) {
-          <p class="text-xs mt-1" style="color: #DC2626;">{{ fieldError('roleId') }}</p>
-          }
+          </div>
         </div>
 
-        <!-- Submit -->
         @if (submitError) {
         <div class="mb-4 px-4 py-3 rounded-lg text-sm flex items-center gap-2" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
           <span>{{ submitError }}</span>
         </div>
         }
+
         <div class="flex items-center gap-3 pt-4 border-t" style="border-color: #F1F5F9;">
           <button type="submit" [disabled]="form.invalid || saving"
             class="px-6 py-2.5 rounded-lg text-white text-sm font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md active:scale-[0.97] flex items-center gap-2"
@@ -295,7 +338,6 @@
             <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             <span>Guardando...</span>
             } @else {
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
             <span>Guardar</span>
             }
           </button>
@@ -312,133 +354,65 @@
 </div>
 }
 
-<!-- ===================== FINGERPRINT MODAL ===================== -->
 @if (showHuellaModal) {
-<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.4);"
-  (click)="closeHuellaModal()">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden" style="animation: fadeUp 0.2s ease-out both;"
-    (click)="$event.stopPropagation()">
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.4);" (click)="closeHuellaModal()">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden" (click)="$event.stopPropagation()">
 
-    <!-- Header -->
     <div class="flex items-center justify-between px-6 py-4 border-b" style="border-color: #F1F5F9;">
-      <h2 class="text-lg font-semibold" style="color: #1E293B;">Capturar Huellas Dactilares</h2>
+      <h2 class="text-lg font-semibold" style="color: #1E293B;">Capturar Huellas</h2>
       <button (click)="closeHuellaModal()" class="p-1 rounded-lg hover:bg-gray-100 transition-colors" style="color: #94A3B8;">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
       </button>
     </div>
 
-    <!-- Body -->
-    <div class="px-6 py-5 space-y-5">
-
-      <!-- Messages -->
+    <div class="px-6 py-6 text-center">
       @if (huellaError) {
-      <div class="px-4 py-3 rounded-lg text-sm flex items-center gap-2" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
-        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clip-rule="evenodd" /></svg>
-        <span>{{ huellaError }}</span>
-      </div>
+        <div class="px-4 py-3 rounded-lg text-sm mb-4" style="background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA;">
+          {{ huellaError }}
+        </div>
       }
-      @if (huellaMensaje) {
-      <div class="px-4 py-3 rounded-lg text-sm" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">
-        {{ huellaMensaje }}
-      </div>
+      @if (huellaMensaje && !huellaError) {
+        <div class="px-4 py-3 rounded-lg text-sm mb-4" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;">
+          {{ huellaMensaje }}
+        </div>
       }
 
-      <!-- Pulgar -->
-      <div class="p-4 rounded-lg border" style="background: #F8FAFC; border-color: #E2E8F0;">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold" style="color: #1E293B;">Pulgar</h3>
-          @if (pulgarStatus === 'done') {
-          <span class="text-xs font-medium flex items-center gap-1" style="color: #16A34A;">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-            Capturada
-          </span>
-          } @else {
-          <span class="text-xs" style="color: #94A3B8;">Pendiente</span>
-          }
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+          [class]="huellasCapturadas.length >= 1 ? 'bg-green-100 text-green-700' : (pasoHuella === 0 && huellaCapturando ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400')">
+          1
         </div>
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-20 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style="border-color: #E2E8F0; background: white;">
-            @if (pulgarPreview) {
-            <img [src]="pulgarPreview" class="w-full h-full object-contain">
-            } @else {
-            <span class="text-2xl">👍</span>
-            }
-          </div>
-          <div class="flex-1">
-            <p class="text-xs mb-2" style="color: #64748B;">Coloque el dedo pulgar en el lector</p>
-            <button type="button" (click)="capturarHuella('pulgar')" [disabled]="pulgarStatus === 'capturing' || pulgarStatus === 'done'"
-              class="px-3.5 py-2 rounded-lg text-white text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-              style="background: #003DA5;">
-              @if (pulgarStatus === 'capturing') {
-              <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Capturando...</span>
-              } @else {
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              <span>Capturar Pulgar</span>
-              }
-            </button>
-          </div>
+        <div class="h-0.5 w-8" [class]="huellasCapturadas.length >= 2 ? 'bg-green-400' : 'bg-gray-200'"></div>
+        <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+          [class]="huellasCapturadas.length >= 2 ? 'bg-green-100 text-green-700' : (pasoHuella === 1 && huellaCapturando ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400')">
+          2
         </div>
       </div>
 
-      <!-- Índice -->
-      <div class="p-4 rounded-lg border" style="background: #F8FAFC; border-color: #E2E8F0;">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold" style="color: #1E293B;">Índice</h3>
-          @if (indiceStatus === 'done') {
-          <span class="text-xs font-medium flex items-center gap-1" style="color: #16A34A;">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-            Capturada
-          </span>
-          } @else {
-          <span class="text-xs" style="color: #94A3B8;">Pendiente</span>
-          }
+      @if (huellaCapturando) {
+        <div class="flex justify-center mb-3">
+          <div class="w-8 h-8 border-2 rounded-full animate-spin" style="border-color: #E2E8F0; border-top-color: #003DA5;"></div>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-20 rounded-lg border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style="border-color: #E2E8F0; background: white;">
-            @if (indicePreview) {
-            <img [src]="indicePreview" class="w-full h-full object-contain">
-            } @else {
-            <span class="text-2xl">👆</span>
-            }
-          </div>
-          <div class="flex-1">
-            <p class="text-xs mb-2" style="color: #64748B;">Coloque el dedo índice en el lector</p>
-            <button type="button" (click)="capturarHuella('indice')" [disabled]="indiceStatus === 'capturing' || indiceStatus === 'done'"
-              class="px-3.5 py-2 rounded-lg text-white text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-              style="background: #003DA5;">
-              @if (indiceStatus === 'capturing') {
-              <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Capturando...</span>
-              } @else {
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              <span>Capturar Índice</span>
-              }
-            </button>
-          </div>
-        </div>
-      </div>
-
+      }
     </div>
 
-    <!-- Footer -->
     <div class="flex items-center justify-end gap-3 px-6 py-4 border-t" style="background: #F8FAFC; border-color: #F1F5F9;">
-      <button (click)="closeHuellaModal()" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors" style="color: #64748B;">
-        Cancelar
-      </button>
-      <button (click)="guardarHuellas()" [disabled]="!pulgarBase64 && !indiceBase64"
-        class="px-4 py-2 rounded-lg text-white text-sm font-medium shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-md"
-        style="background: #003DA5;">
-        ✅ Guardar Huellas
-      </button>
+      @if (!huellaCapturando && huellasCapturadas.length === 1) {
+        <button (click)="continuarCaptura()" class="px-4 py-2 rounded-lg text-white text-sm font-medium shadow-sm hover:shadow-md transition-all" style="background: #003DA5;">
+          Continuar
+        </button>
+      }
+      @if (!huellaCapturando && huellasCapturadas.length >= 2) {
+        <button (click)="closeHuellaModal()" class="px-4 py-2 rounded-lg text-white text-sm font-medium shadow-sm hover:shadow-md transition-all" style="background: #16A34A;">
+          Finalizar
+        </button>
+      }
+      @if (huellaCapturando || huellasCapturadas.length === 0) {
+        <button (click)="closeHuellaModal()" class="px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors" style="color: #64748B;">
+          Cancelar
+        </button>
+      }
     </div>
   </div>
 </div>
 }
-
-<style>
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-</style>
