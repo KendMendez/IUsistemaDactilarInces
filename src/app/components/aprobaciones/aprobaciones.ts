@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 import { AsistenciaService } from '../../services/asistencia';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-aprobaciones',
@@ -17,7 +18,10 @@ export class Aprobaciones implements OnInit {
   processing = '';
   error = '';
 
-  constructor(private service: AsistenciaService) {}
+  constructor(
+    private service: AsistenciaService,
+    private msg: MessageHelper
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -34,7 +38,7 @@ export class Aprobaciones implements OnInit {
         this.list = res.results || [];
       },
       error: () => {
-        this.error = 'Error al cargar pendientes';
+        this.error = this.msg.loadError('pendientes');
       },
     });
   }
@@ -47,13 +51,13 @@ export class Aprobaciones implements OnInit {
     })).subscribe({
       next: (res: any) => {
         if (res?.error) {
-          this.error = res.msg || 'Error al aprobar';
+          this.error = res.msg || this.msg.approveError();
           return;
         }
         this.load();
       },
       error: () => {
-        this.error = 'Error al aprobar';
+        this.error = this.msg.approveError();
       },
     });
   }
@@ -66,13 +70,13 @@ export class Aprobaciones implements OnInit {
     })).subscribe({
       next: (res: any) => {
         if (res?.error) {
-          this.error = res.msg || 'Error al rechazar';
+          this.error = res.msg || this.msg.rejectError();
           return;
         }
         this.load();
       },
       error: () => {
-        this.error = 'Error al rechazar';
+        this.error = this.msg.rejectError();
       },
     });
   }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Auth } from '../../services/auth';
 import { Router } from '@angular/router';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-login',
@@ -19,7 +20,8 @@ export class Login {
 
   constructor(
     private authService: Auth,
-    private router: Router
+    private router: Router,
+    private msg: MessageHelper
   ) {
     this.loginForm = new FormGroup({
       correo: new FormControl('', [Validators.required, Validators.email]),
@@ -43,7 +45,7 @@ export class Login {
         this.seeding = false;
       },
       error: (err) => {
-        this.error = err?.error?.msg || 'Correo o contraseña incorrectos';
+        this.error = err?.error?.msg || this.msg.loginError();
         this.loginForm.get('contraseña')?.setValue('');
         this.seeding = false;
       },

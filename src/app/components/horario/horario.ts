@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { finalize } from 'rxjs/operators';
 import { HorarioService } from '../../services/horario';
 import { EmpleadoService } from '../../services/empleado';
+import { MessageHelper } from '../../helpers/message';
 
 const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
 
@@ -38,6 +39,7 @@ export class Horario implements OnInit {
   constructor(
     private service: HorarioService,
     private empleadoService: EmpleadoService,
+    private msg: MessageHelper
   ) {}
 
   ngOnInit(): void {
@@ -52,7 +54,7 @@ export class Horario implements OnInit {
     })).subscribe({
       next: (res) => { this.list = res.results || res.data || []; },
       error: () => {
-        this.submitError = 'Error al cargar horarios';
+        this.submitError = this.msg.loadError('horarios');
         this.cdr.detectChanges();
       },
     });
@@ -113,14 +115,14 @@ export class Horario implements OnInit {
     this.submitError = '';
     const data = { ...this.form.value, dia: this.diaArray };
     const req = this.editId ? this.service.update(this.editId, data) : this.service.store(data);
-    req.pipe(finalize(() => (this.saving = false))).subscribe({
+    req.pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
       next: (res: any) => {
-        if (res?.error) { this.submitError = res.msg || res.message || 'Error del servidor'; return; }
+        if (res?.error) { this.submitError = res.msg || res.message || this.msg.serverError(); return; }
         this.back(); this.load();
       },
       error: (err: any) => {
         const body = err.error;
-        this.submitError = body?.msg || body?.message || body?.error || err.message || 'Error al guardar';
+        this.submitError = body?.msg || body?.message || body?.error || err.message || this.msg.saveError();
       },
     });
   }
@@ -134,7 +136,7 @@ export class Horario implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Horario] delete error', err);
-          this.submitError = 'Error al eliminar horario';
+          this.submitError = this.msg.deleteError('horario');
           this.cdr.detectChanges();
         }
       },

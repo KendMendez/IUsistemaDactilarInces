@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RolePrivilegioService } from '../../services/role-privilegio';
 import { RolService } from '../../services/rol';
 import { PrivilegioService } from '../../services/privilegio';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-role-privilegio',
@@ -22,17 +23,18 @@ export class RolePrivilegio implements OnInit {
   constructor(
     private service: RolePrivilegioService,
     private rolService: RolService,
-    private privilegioService: PrivilegioService
+    private privilegioService: PrivilegioService,
+    private msg: MessageHelper
  ) {}
 
   ngOnInit(): void {
     this.rolService.index().subscribe({
       next: (res) => { this.roles = res.results || []; this.cdr.detectChanges(); },
-      error: (err) => { console.error('[RolePrivilegio] load roles error', err); this.error = 'Error al cargar roles'; this.cdr.detectChanges(); },
+      error: (err) => { console.error('[RolePrivilegio] load roles error', err); this.error = this.msg.loadError('roles'); this.cdr.detectChanges(); },
     });
     this.privilegioService.index().subscribe({
       next: (res) => { this.privilegios = res.results || []; this.cdr.detectChanges(); },
-      error: (err) => { console.error('[RolePrivilegio] load privilegios error', err); this.error = 'Error al cargar privilegios'; this.cdr.detectChanges(); },
+      error: (err) => { console.error('[RolePrivilegio] load privilegios error', err); this.error = this.msg.loadError('privilegios'); this.cdr.detectChanges(); },
     });
   }
 
@@ -40,7 +42,7 @@ export class RolePrivilegio implements OnInit {
     if (!this.selectedRole) return;
     this.service.showByRoleId(this.selectedRole).subscribe({
       next: (res) => { this.asignados = res.results || []; this.cdr.detectChanges(); },
-      error: (err) => { console.error('[RolePrivilegio] showByRoleId error', err); this.error = 'Error al cargar privilegios del rol'; this.cdr.detectChanges(); },
+      error: (err) => { console.error('[RolePrivilegio] showByRoleId error', err); this.error = this.msg.loadError('privilegios del rol'); this.cdr.detectChanges(); },
     });
   }
 
@@ -60,7 +62,7 @@ export class RolePrivilegio implements OnInit {
       error: (err) => {
         const body = err.error;
         console.error('[RolePrivilegio] store error status:', err.status, 'body:', body);
-        this.error = body?.msg || body?.message || body?.error || err.message || 'Error al guardar privilegios';
+        this.error = body?.msg || body?.message || body?.error || err.message || this.msg.serverError();
         this.cdr.detectChanges();
       },
     });

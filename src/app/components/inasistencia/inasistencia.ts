@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 import { InasistenciaService } from '../../services/inasistencia';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-inasistencia',
@@ -16,7 +17,10 @@ export class Inasistencia implements OnInit {
 
   private cdr = inject(ChangeDetectorRef);
 
-  constructor(private service: InasistenciaService) {}
+  constructor(
+    private service: InasistenciaService,
+    private msg: MessageHelper
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -30,7 +34,7 @@ export class Inasistencia implements OnInit {
     })).subscribe({
       next: (res) => { this.list = res.results || res.data || []; },
       error: () => {
-        this.submitError = 'Error al cargar inasistencias';
+        this.submitError = this.msg.loadError('inasistencias');
         this.cdr.detectChanges();
       },
     });
@@ -50,7 +54,7 @@ export class Inasistencia implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Inasistencia] delete error', err);
-          this.submitError = 'Error al eliminar inasistencia';
+          this.submitError = this.msg.deleteError('inasistencia');
           this.cdr.detectChanges();
         }
       },

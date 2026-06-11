@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { CargoService } from '../../services/cargo';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-cargo',
@@ -24,7 +25,10 @@ export class Cargo implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
 
-  constructor(private service: CargoService) {}
+  constructor(
+    private service: CargoService,
+    private msg: MessageHelper
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -41,7 +45,7 @@ export class Cargo implements OnInit {
       },
       error: (err) => {
         console.error('[Cargo] load error', err);
-        this.submitError = 'Error al cargar los cargos';
+        this.submitError = this.msg.loadError('los cargos');
         this.cdr.detectChanges();
       },
     });
@@ -79,10 +83,10 @@ export class Cargo implements OnInit {
       ? this.service.update(this.editId, data)
       : this.service.store(data);
 
-    req.pipe(finalize(() => (this.saving = false))).subscribe({
+    req.pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
       next: (res: any) => {
         if (res?.error) {
-          this.submitError = res.msg || res.message || res.mensaje || 'Error del servidor';
+          this.submitError = res.msg || res.message || res.mensaje || this.msg.serverError();
           return;
         }
         this.back();
@@ -90,7 +94,7 @@ export class Cargo implements OnInit {
       },
       error: (err: any) => {
         const body = err.error;
-        this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || 'Error al guardar';
+        this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || this.msg.saveError();
       },
     });
   }
@@ -104,7 +108,7 @@ export class Cargo implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Cargo] delete error', err);
-          this.submitError = 'Error al eliminar el cargo';
+          this.submitError = this.msg.deleteError('el cargo');
         }
       },
     });

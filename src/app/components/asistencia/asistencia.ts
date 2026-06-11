@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 import { AsistenciaService } from '../../services/asistencia';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-asistencia',
@@ -16,7 +17,10 @@ export class Asistencia implements OnInit {
 
   private cdr = inject(ChangeDetectorRef);
 
-  constructor(private service: AsistenciaService) {}
+  constructor(
+    private service: AsistenciaService,
+    private msg: MessageHelper
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -33,7 +37,7 @@ export class Asistencia implements OnInit {
       },
       error: (err) => {
         console.error('[Asistencia] load error', err);
-        this.error = 'Error al cargar asistencias';
+        this.error = this.msg.loadError('asistencias');
         this.cdr.detectChanges();
       },
     });
@@ -52,7 +56,7 @@ export class Asistencia implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Asistencia] delete error', err);
-          this.error = 'Error al eliminar asistencia';
+          this.error = this.msg.deleteError('asistencia');
         }
       },
     });

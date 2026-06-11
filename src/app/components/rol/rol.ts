@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { RolService } from '../../services/rol';
 import { RolePrivilegioService } from '../../services/role-privilegio';
 import { PrivilegioService } from '../../services/privilegio';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-rol',
@@ -32,7 +33,8 @@ export class Rol implements OnInit {
   constructor(
     private service: RolService,
     private rolePrivService: RolePrivilegioService,
-    private privService: PrivilegioService
+    private privService: PrivilegioService,
+    private msg: MessageHelper
   ) {}
 
   ngOnInit(): void {
@@ -54,7 +56,7 @@ export class Rol implements OnInit {
       },
       error: (err) => {
         console.error('[Rol] load error', err);
-        this.submitError = 'Error al cargar roles';
+        this.submitError = this.msg.loadError('roles');
         this.cdr.detectChanges();
       },
     });
@@ -119,7 +121,7 @@ export class Rol implements OnInit {
     if (this.form.invalid || this.saving) return;
 
     if (this.selectedPrivs.length === 0) {
-      this.submitError = 'Debe asignar al menos un privilegio al rol';
+      this.submitError = this.msg.noPrivileges();
       this.saving = false;
       return;
     }
@@ -133,33 +135,33 @@ export class Rol implements OnInit {
     const onPrivError = (err: any) => {
       const body = err.error;
       console.error('[Rol] savePrivs error status:', err.status, 'body:', body);
-      this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || 'Error al asignar privilegios';
+      this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || this.msg.serverError();
       this.saving = false;
     };
 
     if (this.editId) {
-      this.service.update(this.editId, data).pipe(finalize(() => (this.saving = false))).subscribe({
+      this.service.update(this.editId, data).pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
         next: (res: any) => {
-          if (res?.error) { this.submitError = res.msg || res.message || res.mensaje || 'Error del servidor'; return; }
+          if (res?.error) { this.submitError = res.msg || res.message || res.mensaje || this.msg.serverError(); return; }
           this.savePrivs(this.editId!).subscribe({ next: (privRes: any) => {
-            if (privRes?.error) { this.submitError = privRes.msg || privRes.message || 'Error al asignar privilegios'; return; }
+            if (privRes?.error) { this.submitError = privRes.msg || privRes.message || this.msg.serverError(); return; }
             this.back(); this.load();
           }, error: onPrivError });
         },
         error: (err: any) => {
           const body = err.error;
-          this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || 'Error al guardar';
+          this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || this.msg.saveError();
         },
       });
     } else {
-      this.service.store(data).pipe(finalize(() => (this.saving = false))).subscribe({
+      this.service.store(data).pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
         next: (res: any) => {
-          if (res?.error) { this.submitError = res.msg || res.message || res.mensaje || 'Error del servidor'; return; }
+          if (res?.error) { this.submitError = res.msg || res.message || res.mensaje || this.msg.serverError(); return; }
           const r = res.results || res.data || res;
           const newId = r.rolId ?? r.id ?? null;
           if (newId) {
             this.savePrivs(newId).subscribe({ next: (privRes: any) => {
-              if (privRes?.error) { this.submitError = privRes.msg || privRes.message || 'Error al asignar privilegios'; return; }
+              if (privRes?.error) { this.submitError = privRes.msg || privRes.message || this.msg.serverError(); return; }
               this.back(); this.load();
             }, error: onPrivError });
           } else {
@@ -169,7 +171,7 @@ export class Rol implements OnInit {
         },
         error: (err: any) => {
           const body = err.error;
-          this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || 'Error al guardar';
+          this.submitError = body?.msg || body?.message || body?.mensaje || body?.error || err.message || this.msg.saveError();
         },
       });
     }
@@ -184,7 +186,7 @@ export class Rol implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Rol] delete error', err);
-          this.submitError = 'Error al eliminar rol';
+          this.submitError = this.msg.deleteError('rol');
         }
       },
     });

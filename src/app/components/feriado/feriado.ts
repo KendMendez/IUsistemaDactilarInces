@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
 import { FeriadoService } from '../../services/feriado';
+import { MessageHelper } from '../../helpers/message';
 
 @Component({
   selector: 'app-feriado',
@@ -25,7 +26,10 @@ export class Feriado implements OnInit {
 
   private cdr = inject(ChangeDetectorRef);
 
-  constructor(private service: FeriadoService) {}
+  constructor(
+    private service: FeriadoService,
+    private msg: MessageHelper
+  ) {}
 
   ngOnInit(): void {
     this.load();
@@ -39,7 +43,7 @@ export class Feriado implements OnInit {
     })).subscribe({
       next: (res) => { this.list = res.results || res.data || []; },
       error: () => {
-        this.submitError = 'Error al cargar feriados';
+        this.submitError = this.msg.loadError('feriados');
         this.cdr.detectChanges();
       },
     });
@@ -74,14 +78,14 @@ export class Feriado implements OnInit {
     this.submitError = '';
     const data = this.form.value;
     const req = this.editId ? this.service.update(this.editId, data) : this.service.store(data);
-    req.pipe(finalize(() => (this.saving = false))).subscribe({
+    req.pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
       next: (res: any) => {
-        if (res?.error) { this.submitError = res.msg || res.message || 'Error del servidor'; return; }
+        if (res?.error) { this.submitError = res.msg || res.message || this.msg.serverError(); return; }
         this.back(); this.load();
       },
       error: (err: any) => {
         const body = err.error;
-        this.submitError = body?.msg || body?.message || body?.error || err.message || 'Error al guardar';
+        this.submitError = body?.msg || body?.message || body?.error || err.message || this.msg.saveError();
       },
     });
   }
@@ -95,7 +99,7 @@ export class Feriado implements OnInit {
           this.eliminar(id, true);
         } else {
           console.error('[Feriado] delete error', err);
-          this.submitError = 'Error al eliminar feriado';
+          this.submitError = this.msg.deleteError('feriado');
           this.cdr.detectChanges();
         }
       },

@@ -7,6 +7,7 @@ import { CargoService } from '../../services/cargo';
 import { RolService } from '../../services/rol';
 import { HuellaService } from '../../services/huella';
 import { KioskoService } from '../../services/kiosko';
+import { MessageHelper } from '../../helpers/message';
 
 function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | null {
   if (!control.value) return null;
@@ -72,6 +73,7 @@ export class Empleado implements OnInit, OnDestroy {
     private rolService: RolService,
     private huellaService: HuellaService,
     private kiosko: KioskoService,
+    private msg: MessageHelper
   ) {}
 
   ngOnInit(): void {
@@ -96,7 +98,7 @@ export class Empleado implements OnInit, OnDestroy {
         this.filteredList = [...this.list];
       },
       error: () => {
-        this.submitError = 'Error al cargar empleados';
+        this.submitError = this.msg.loadError('empleados');
         this.cdr.detectChanges();
       },
     });
@@ -130,7 +132,7 @@ export class Empleado implements OnInit, OnDestroy {
       },
       error: () => {
         this.filteredList = [];
-        this.submitError = 'Empleado no encontrado';
+        this.submitError = this.msg.notFound('Empleado');
       },
     });
   }
@@ -211,7 +213,7 @@ export class Empleado implements OnInit, OnDestroy {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      this.submitError = 'La foto no debe superar los 2MB';
+      this.submitError = this.msg.photoSizeError();
       return;
     }
 
@@ -260,7 +262,7 @@ export class Empleado implements OnInit, OnDestroy {
       },
       error: (err) => {
         if (!this.showHuellaModal) return;
-        this.huellaError = typeof err === 'string' ? err : 'Error al capturar huella';
+        this.huellaError = typeof err === 'string' ? err : this.msg.fingerprintError();
         this.huellaCapturando = false;
         this.cdr.detectChanges();
       },
@@ -297,12 +299,12 @@ export class Empleado implements OnInit, OnDestroy {
   fieldError(field: string): string {
     const ctrl = this.form.get(field);
     if (!ctrl || !ctrl.errors || !ctrl.touched) return '';
-    if (ctrl.errors['required']) return 'Campo requerido';
-    if (ctrl.errors['email']) return 'Correo electrónico inválido';
+    if (ctrl.errors['required']) return this.msg.required();
+    if (ctrl.errors['email']) return this.msg.invalidEmail();
     if (ctrl.errors['phone']) return ctrl.errors['phone'];
-    if (ctrl.errors['pattern']) return 'Solo se permiten números';
+    if (ctrl.errors['pattern']) return this.msg.onlyNumbers();
     if (ctrl.errors['minlength']) return 'Mínimo ' + ctrl.errors['minlength'].requiredLength + ' caracteres';
-    return 'Campo inválido';
+    return this.msg.required();
   }
 
   togglePassword() {
@@ -336,7 +338,7 @@ export class Empleado implements OnInit, OnDestroy {
       };
       reader.onerror = () => {
         this.saving = false;
-        this.submitError = 'No se pudo leer la foto seleccionada.';
+        this.submitError = this.msg.photoReadError();
         this.cdr.detectChanges();
       };
       reader.readAsDataURL(this.fotoArchivo);
@@ -372,7 +374,7 @@ export class Empleado implements OnInit, OnDestroy {
     })).subscribe({
       next: (res: any) => {
         if (res?.error) {
-          this.submitError = res.msg || res.message || 'Error del servidor';
+          this.submitError = res.msg || res.message || this.msg.serverError();
           return;
         }
         this.backToList();
@@ -386,7 +388,7 @@ export class Empleado implements OnInit, OnDestroy {
             .join('; ');
           this.submitError = msgs;
         } else {
-          this.submitError = body?.msg || body?.message || err.message || 'Error al guardar.';
+          this.submitError = body?.msg || body?.message || err.message || this.msg.saveError();
         }
       },
     });
@@ -404,7 +406,7 @@ export class Empleado implements OnInit, OnDestroy {
         if (body?.requires_confirmation && confirm(body.msg)) {
           this.eliminar(id, true);
         } else {
-          this.submitError = 'Error al eliminar empleado';
+          this.submitError = this.msg.deleteError('empleado');
         }
       },
     });
