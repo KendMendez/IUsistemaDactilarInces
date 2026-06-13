@@ -28,4 +28,9 @@ export class EmpleadoService {
   delete(id: string, force = false): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}/delete${force ? '?force=1' : ''}`);
   }
+
+  editData(id?: string): Observable<any> {
+    const url = id ? `${this.apiUrl}/edit-data/${id}` : `${this.apiUrl}/edit-data`;
+    return this.http.get(url);
+  }
 }

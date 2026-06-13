@@ -15,6 +15,7 @@ export class KioskoService {
   private apiUrl = `${URL_API}/kiosko`;
   private api: any = null;
   private listening = false;
+  private processing = false;
 
   private statusSubj = new BehaviorSubject<KioskoStatus>({ visible: false, message: '', type: 'info' });
   status$ = this.statusSubj.asObservable();
@@ -51,9 +52,14 @@ export class KioskoService {
   }
 
   private onSample(e: any): void {
+    if (this.processing) return;
+    this.processing = true;
+
     try {
+      this.api?.stopAcquisition();
+
       const samples = JSON.parse(e.samples);
-      if (!samples?.length) return;
+      if (!samples?.length) { this.release(); return; }
 
       const png = this.F.b64UrlTo64(samples[0]);
 
@@ -69,6 +75,7 @@ export class KioskoService {
             this.statusSubj.next({ visible: true, message: 'Huella no reconocida', type: 'error' });
             setTimeout(() => {
               this.statusSubj.next({ visible: false, message: '', type: 'info' });
+              this.release();
             }, 3000);
           }
         },
@@ -76,12 +83,19 @@ export class KioskoService {
           this.statusSubj.next({ visible: true, message: 'Error de conexión', type: 'error' });
           setTimeout(() => {
             this.statusSubj.next({ visible: false, message: '', type: 'info' });
+            this.release();
           }, 3000);
         },
       });
     } catch (ex: any) {
       console.error('[Kiosko] onSample error:', ex?.message || ex);
+      this.release();
     }
+  }
+
+  private release(): void {
+    this.processing = false;
+    this.startListening();
   }
 
   private registrarAsistencia(idEmpleado: string, nombre: string): void {
@@ -101,12 +115,14 @@ export class KioskoService {
         }
         setTimeout(() => {
           this.statusSubj.next({ visible: false, message: '', type: 'info' });
+          this.release();
         }, 4000);
       },
       error: () => {
         this.statusSubj.next({ visible: true, message: 'Error de conexión', type: 'error' });
         setTimeout(() => {
           this.statusSubj.next({ visible: false, message: '', type: 'info' });
+          this.release();
         }, 3000);
       },
     });

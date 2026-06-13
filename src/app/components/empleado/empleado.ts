@@ -175,14 +175,25 @@ export class Empleado implements OnInit, OnDestroy {
         correo: empleado.correo || '',
         telefono: empleado.telefono || '',
         sexo: empleado.sexo,
-        id_cargo: empleado.id_cargo,
       });
       if (empleado.foto) {
         this.fotoPreview = 'data:image/png;base64,' + empleado.foto;
       }
-      if (empleado.rolIds?.length > 0) {
-        this.form.patchValue({ roleId: empleado.rolIds[0] });
-      }
+    }
+
+    if (this.editId) {
+      this.service.editData(this.editId).subscribe({
+        next: (res) => {
+          this.cargos = res.cargos || [];
+          this.roles = res.roles || [];
+          const selCargo = this.cargos.find((c: any) => c.selected);
+          const selRol = this.roles.find((r: any) => r.selected);
+          if (selCargo) this.form.patchValue({ id_cargo: selCargo.cargoId });
+          if (selRol) this.form.patchValue({ roleId: selRol.rolId });
+          this.cdr.detectChanges();
+        },
+        error: (err) => { console.error('[Empleado] editData error', err); this.cdr.detectChanges(); },
+      });
     }
   }
 

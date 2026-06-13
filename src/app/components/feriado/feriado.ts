@@ -4,15 +4,20 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { finalize } from 'rxjs/operators';
 import { FeriadoService } from '../../services/feriado';
 import { MessageHelper } from '../../helpers/message';
+import { FullCalendarModule } from '@fullcalendar/angular';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import { CalendarOptions } from '@fullcalendar/core';
 
 @Component({
   selector: 'app-feriado',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FullCalendarModule],
   templateUrl: './feriado.html',
   styles: ``,
 })
 export class Feriado implements OnInit {
   list: any[] = [];
+  feriadoEvents: any[] = [];
   loading = false;
   saving = false;
   submitError = '';
@@ -23,6 +28,22 @@ export class Feriado implements OnInit {
     fecha: new FormControl('', Validators.required),
     descripcion: new FormControl('', Validators.required),
   });
+
+  calendarOptions: CalendarOptions = {
+    plugins: [dayGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    height: 'auto',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: '',
+    },
+    buttonText: { today: 'Hoy' },
+    eventColor: '#EF4444',
+    dateClick: (info) => this.onDateClick(info),
+    eventClick: (info) => this.onEventClick(info),
+  };
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -41,12 +62,37 @@ export class Feriado implements OnInit {
       this.loading = false;
       this.cdr.detectChanges();
     })).subscribe({
-      next: (res) => { this.list = res.results || res.data || []; },
+      next: (res) => {
+        this.list = res.results || res.data || [];
+        this.feriadoEvents = this.mapToEvents();
+      },
       error: () => {
         this.submitError = this.msg.loadError('feriados');
         this.cdr.detectChanges();
       },
     });
+  }
+
+  private mapToEvents(): any[] {
+    return this.list.map(f => ({
+      id: f.feriadoId,
+      title: f.descripcion,
+      start: f.fecha,
+      allDay: true,
+      extendedProps: { feriado: f },
+    }));
+  }
+
+  onDateClick(info: any) {
+    this.openForm();
+    this.form.patchValue({ fecha: info.dateStr });
+    this.cdr.detectChanges();
+  }
+
+  onEventClick(info: any) {
+    const feriado = info.event.extendedProps?.feriado;
+    if (feriado) this.openForm(feriado);
+    this.cdr.detectChanges();
   }
 
   openForm(item?: any) {
@@ -69,6 +115,7 @@ export class Feriado implements OnInit {
     this.editId = null;
     this.form.reset();
     this.submitError = '';
+    this.load();
   }
 
   onSubmit() {
@@ -81,7 +128,7 @@ export class Feriado implements OnInit {
     req.pipe(finalize(() => { this.saving = false; this.cdr.detectChanges(); })).subscribe({
       next: (res: any) => {
         if (res?.error) { this.submitError = res.msg || res.message || this.msg.serverError(); return; }
-        this.back(); this.load();
+        this.back();
       },
       error: (err: any) => {
         const body = err.error;
@@ -92,7 +139,7 @@ export class Feriado implements OnInit {
 
   eliminar(id: string, force = false) {
     this.service.delete(id, force).subscribe({
-      next: () => this.load(),
+      next: () => this.back(),
       error: (err) => {
         const body = err.error;
         if (body?.requires_confirmation && confirm(body.msg)) {
@@ -104,9 +151,5 @@ export class Feriado implements OnInit {
         }
       },
     });
-  }
-
-  trackById(_i: number, item: any): string {
-    return item.feriadoId;
   }
 }
