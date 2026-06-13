@@ -76,8 +76,10 @@ export class Rol implements OnInit {
 
       this.rolePrivService.showByRoleId(this.editId!).subscribe({
         next: (res) => {
-          const asig = res.results || [];
-          this.selectedPrivs = asig.map((a: any) => String(a.privilegioId ?? a.id)).filter(Boolean);
+          this.privilegios = res.results || [];
+          this.selectedPrivs = this.privilegios
+            .filter((p: any) => p.selected)
+            .map((p: any) => String(p.privilegioId));
           this.cdr.detectChanges();
         },
         error: (err) => { console.error('[Rol] showByRoleId error', err); this.cdr.detectChanges(); },
