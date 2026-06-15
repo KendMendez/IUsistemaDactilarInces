@@ -95,6 +95,7 @@ export class KioskoService {
 
   private release(): void {
     this.processing = false;
+    this.listening = false;
     this.startListening();
   }
 
