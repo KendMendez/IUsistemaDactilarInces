@@ -75,6 +75,7 @@ export class App {
     ).subscribe(() => {
       this.isLoggedIn = this.auth.isLoggedIn();
       this.updatePageTitle();
+      this.loadPrivileges();
 
       if (this.isLoggedIn) {
         const empleado = this.auth.getEmpleado();
@@ -84,15 +85,10 @@ export class App {
   }
 
   private loadPrivileges() {
-    const cachedPrivilegios = localStorage.getItem('privilegios');
     const cachedCampos = localStorage.getItem('campos');
-    if (cachedPrivilegios && cachedCampos) {
+    if (cachedCampos) {
       this.filterMenu(JSON.parse(cachedCampos));
     }
-    this.auth.fetchMyPrivileges().subscribe({
-      next: () => this.filterMenu(this.auth.getCampos()),
-      error: () => {},
-    });
   }
 
   private filterMenu(campos: string[]) {

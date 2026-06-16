@@ -12,7 +12,12 @@ export class Auth {
   private privilegios: string[] = [];
   private campos: string[] = [];
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(private http: HttpClient, private router: Router) {
+    const cached = localStorage.getItem('privilegios');
+    if (cached) {
+      this.privilegios = JSON.parse(cached);
+    }
+  }
 
   login(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/login`, credentials).pipe(
@@ -26,6 +31,12 @@ export class Auth {
           if (empleado.empleadoId) {
             localStorage.setItem('empleadoId', empleado.empleadoId);
           }
+        }
+        if (response.results?.privilegios) {
+          this.privilegios = response.results.privilegios;
+          this.campos = response.results.campos || [];
+          localStorage.setItem('privilegios', JSON.stringify(this.privilegios));
+          localStorage.setItem('campos', JSON.stringify(this.campos));
         }
       })
     );
@@ -47,11 +58,19 @@ export class Auth {
   }
 
   hasPrivilege(privilegio: string): boolean {
-    return this.privilegios.includes(privilegio);
+    if (this.privilegios.length > 0) {
+      return this.privilegios.includes(privilegio);
+    }
+    const cached: string[] = JSON.parse(localStorage.getItem('privilegios') || '[]');
+    return cached.includes(privilegio);
   }
 
   hasCampo(campo: string): boolean {
-    return this.campos.includes(campo);
+    if (this.campos.length > 0) {
+      return this.campos.includes(campo);
+    }
+    const cached: string[] = JSON.parse(localStorage.getItem('campos') || '[]');
+    return cached.includes(campo);
   }
 
   getPrivilegios(): string[] {
