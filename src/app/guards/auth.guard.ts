@@ -25,3 +25,9 @@ export const publicGuard = () => {
 
   return true;
 };
+
+export const campoGuard = (requiredCampo: string) => {
+  const router = inject(Router);
+  const campos: string[] = JSON.parse(localStorage.getItem('campos') || '[]');
+  return campos.includes(requiredCampo) ? true : router.parseUrl('/menu');
+};
