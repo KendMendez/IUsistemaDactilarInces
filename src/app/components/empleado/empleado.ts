@@ -8,6 +8,7 @@ import { RolService } from '../../services/rol';
 import { HuellaService } from '../../services/huella';
 import { KioskoService } from '../../services/kiosko';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 
 function venezuelanPhoneValidator(control: AbstractControl): ValidationErrors | null {
   if (!control.value) return null;
@@ -66,6 +67,7 @@ export class Empleado implements OnInit, OnDestroy {
   });
 
   private cdr = inject(ChangeDetectorRef);
+  public auth = inject(Auth);
 
   constructor(
     private service: EmpleadoService,
@@ -77,6 +79,7 @@ export class Empleado implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver empleados')) return;
     this.load();
     this.loadCargos();
     this.loadRoles();

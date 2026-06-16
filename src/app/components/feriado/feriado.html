@@ -1,3 +1,4 @@
+@if (auth.hasPrivilege('ver feriados')) {
 @if (!showForm) {
 <div class="p-6">
   <div class="max-w-4xl mx-auto">
@@ -60,7 +61,7 @@
             <span>Guardando...</span>
             } @else { <span>Guardar</span> }
           </button>
-          @if (editId) {
+          @if (editId && auth.hasPrivilege('eliminar feriado')) {
           <button type="button" (click)="eliminar(editId!)"
             class="px-6 py-2.5 rounded-lg text-white text-sm font-medium shadow-sm transition-all hover:shadow-md flex items-center gap-2"
             style="background: #EF4444;">
@@ -73,4 +74,5 @@
     </div>
   </div>
 </div>
+}
 }

@@ -6,6 +6,7 @@ import { RolService } from '../../services/rol';
 import { RolePrivilegioService } from '../../services/role-privilegio';
 import { PrivilegioService } from '../../services/privilegio';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-rol',
@@ -29,6 +30,7 @@ export class Rol implements OnInit {
   selectedPrivs: string[] = [];
 
   private cdr = inject(ChangeDetectorRef);
+  public auth = inject(Auth);
 
   constructor(
     private service: RolService,
@@ -38,6 +40,7 @@ export class Rol implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver roles')) return;
     this.load();
     this.privService.index().subscribe({
       next: (res) => { this.privilegios = res.results || []; this.cdr.detectChanges(); },

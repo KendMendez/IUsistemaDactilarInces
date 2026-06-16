@@ -5,6 +5,7 @@ import { finalize } from 'rxjs/operators';
 import { HorarioService } from '../../services/horario';
 import { EmpleadoService } from '../../services/empleado';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 
 const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
 
@@ -35,6 +36,7 @@ export class Horario implements OnInit {
   });
 
   private cdr = inject(ChangeDetectorRef);
+  public auth = inject(Auth);
 
   constructor(
     private service: HorarioService,
@@ -43,6 +45,7 @@ export class Horario implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver horarios')) return;
     this.load();
   }
 

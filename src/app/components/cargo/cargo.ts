@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { finalize } from 'rxjs/operators';
 import { CargoService } from '../../services/cargo';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-cargo',
@@ -23,7 +24,7 @@ export class Cargo implements OnInit {
     cargo: new FormControl('', Validators.required),
   });
   private cdr = inject(ChangeDetectorRef);
-
+  public auth = inject(Auth);
 
   constructor(
     private service: CargoService,
@@ -31,6 +32,7 @@ export class Cargo implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver cargos')) return;
     this.load();
   }
 

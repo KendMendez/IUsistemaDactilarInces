@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 import { InasistenciaService } from '../../services/inasistencia';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 
 @Component({
   selector: 'app-inasistencia',
@@ -16,6 +17,7 @@ export class Inasistencia implements OnInit {
   submitError = '';
 
   private cdr = inject(ChangeDetectorRef);
+  public auth = inject(Auth);
 
   constructor(
     private service: InasistenciaService,
@@ -23,6 +25,7 @@ export class Inasistencia implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver inasistencias')) return;
     this.load();
   }
 

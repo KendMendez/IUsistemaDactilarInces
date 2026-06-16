@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angula
 import { finalize } from 'rxjs/operators';
 import { FeriadoService } from '../../services/feriado';
 import { MessageHelper } from '../../helpers/message';
+import { Auth } from '../../services/auth';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -46,6 +47,7 @@ export class Feriado implements OnInit {
   };
 
   private cdr = inject(ChangeDetectorRef);
+  public auth = inject(Auth);
 
   constructor(
     private service: FeriadoService,
@@ -53,6 +55,7 @@ export class Feriado implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.auth.hasPrivilege('ver feriados')) return;
     this.load();
   }
 
@@ -84,12 +87,14 @@ export class Feriado implements OnInit {
   }
 
   onDateClick(info: any) {
+    if (!this.auth.hasPrivilege('crear feriado')) return;
     this.openForm();
     this.form.patchValue({ fecha: info.dateStr });
     this.cdr.detectChanges();
   }
 
   onEventClick(info: any) {
+    if (!this.auth.hasPrivilege('editar feriado')) return;
     const feriado = info.event.extendedProps?.feriado;
     if (feriado) this.openForm(feriado);
     this.cdr.detectChanges();
