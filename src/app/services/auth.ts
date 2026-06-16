@@ -9,6 +9,8 @@ import { URL_API } from '../config/constants';
 })
 export class Auth {
   private apiUrl = `${URL_API}/auth`;
+  private privilegios: string[] = [];
+  private campos: string[] = [];
 
   constructor(private http: HttpClient, private router: Router) {}
 
@@ -33,6 +35,33 @@ export class Auth {
     return !!localStorage.getItem('auth_token');
   }
 
+  fetchMyPrivileges(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/me`).pipe(
+      tap((res: any) => {
+        this.privilegios = res.privilegios || [];
+        this.campos = res.campos || [];
+        localStorage.setItem('privilegios', JSON.stringify(this.privilegios));
+        localStorage.setItem('campos', JSON.stringify(this.campos));
+      })
+    );
+  }
+
+  hasPrivilege(privilegio: string): boolean {
+    return this.privilegios.includes(privilegio);
+  }
+
+  hasCampo(campo: string): boolean {
+    return this.campos.includes(campo);
+  }
+
+  getPrivilegios(): string[] {
+    return this.privilegios;
+  }
+
+  getCampos(): string[] {
+    return this.campos;
+  }
+
   logout() {
     this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
       error: () => {},
@@ -40,6 +69,10 @@ export class Auth {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('empleadoId');
     localStorage.removeItem('empleado');
+    localStorage.removeItem('privilegios');
+    localStorage.removeItem('campos');
+    this.privilegios = [];
+    this.campos = [];
     this.router.navigate(['/login']);
   }
 

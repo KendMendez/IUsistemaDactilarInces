@@ -111,6 +111,38 @@ export class Rol implements OnInit {
     }
   }
 
+  getCampos(): string[] {
+    const map: Record<string, boolean> = {};
+    for (const p of this.privilegios) {
+      const c = p.campo || '';
+      if (c) map[c] = true;
+    }
+    return Object.keys(map);
+  }
+
+  getPrivsByCampo(campo: string): any[] {
+    return this.privilegios.filter(p => (p.campo || '') === campo);
+  }
+
+  isCampoAllSelected(campo: string): boolean {
+    const ids = this.getPrivsByCampo(campo).map(p => this.privId(p));
+    return ids.length > 0 && ids.every(id => this.selectedPrivs.includes(id));
+  }
+
+  toggleCampo(campo: string) {
+    const ids = this.getPrivsByCampo(campo).map(p => this.privId(p));
+    const allSelected = ids.every(id => this.selectedPrivs.includes(id));
+    if (allSelected) {
+      this.selectedPrivs = this.selectedPrivs.filter(v => !ids.includes(v));
+    } else {
+      for (const id of ids) {
+        if (!this.selectedPrivs.includes(id)) {
+          this.selectedPrivs = [...this.selectedPrivs, id];
+        }
+      }
+    }
+  }
+
   private savePrivs(rolId: string) {
     return this.rolePrivService.store({
       roleId: rolId,

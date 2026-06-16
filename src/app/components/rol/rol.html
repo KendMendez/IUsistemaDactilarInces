@@ -91,13 +91,24 @@
             <p class="text-sm" style="color: #94A3B8;">No hay privilegios disponibles. Cree privilegios primero en la sección de Privilegios.</p>
           </div>
           } @else {
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-3 rounded-lg border" style="background: #F8FAFC; border-color: #E2E8F0;">
-            @for (p of privilegios; track $index) {
-            <label class="flex items-center gap-3 px-3 py-2 rounded-lg border bg-white cursor-pointer hover:bg-blue-50/50 transition-colors" style="border-color: #E2E8F0;">
-              <input type="checkbox" [checked]="isChecked(privId(p))" (change)="togglePriv(privId(p))"
-                class="w-4 h-4 rounded" style="accent-color: #003DA5;">
-              <span class="text-sm" style="color: #1E293B;">{{ p.privilegio || p.nombre }}</span>
-            </label>
+          <div class="max-h-80 overflow-y-auto p-3 rounded-lg border" style="background: #F8FAFC; border-color: #E2E8F0;">
+            @for (campo of getCampos(); track campo) {
+            <div class="mb-4 last:mb-0">
+              <label class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-blue-50/50 transition-colors font-semibold text-sm" style="color: #1E293B;">
+                <input type="checkbox" [checked]="isCampoAllSelected(campo)" (change)="toggleCampo(campo)"
+                  class="w-4 h-4 rounded" style="accent-color: #003DA5;">
+                {{ campo }}
+              </label>
+              <div class="ml-6 mt-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                @for (p of getPrivsByCampo(campo); track $index) {
+                <label class="flex items-center gap-3 px-3 py-1.5 rounded-lg border bg-white cursor-pointer hover:bg-blue-50/50 transition-colors" style="border-color: #E2E8F0;">
+                  <input type="checkbox" [checked]="isChecked(privId(p))" (change)="togglePriv(privId(p))"
+                    class="w-4 h-4 rounded" style="accent-color: #003DA5;">
+                  <span class="text-sm" style="color: #1E293B;">{{ p.privilegio || p.nombre }}</span>
+                </label>
+                }
+              </div>
+            </div>
             }
           </div>
           <p class="text-xs mt-1.5" style="color: #94A3B8;">Seleccione los privilegios que tendrá este rol</p>

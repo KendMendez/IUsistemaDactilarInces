@@ -21,7 +21,7 @@ export class App {
   userRol = '';
   fechaActual = '';
 
-  menuItems = [
+  private allMenuItems = [
     { path: '/menu', label: 'Dashboard' },
     { path: '/empleados', label: 'Empleados' },
     { path: '/cargos', label: 'Cargos' },
@@ -32,6 +32,19 @@ export class App {
     { path: '/horarios', label: 'Horarios' },
     { path: '/feriados', label: 'Feriados' },
   ];
+
+  menuItems = [...this.allMenuItems];
+
+  private menuCampoMap: Record<string, string> = {
+    'Empleados': 'Empleados',
+    'Cargos': 'Cargos',
+    'Roles': 'Roles',
+    'Aprobaciones': 'Asistencias',
+    'Asistencias': 'Asistencias',
+    'Inasistencias': 'Inasistencias',
+    'Horarios': 'Horarios',
+    'Feriados': 'Feriados',
+  };
 
   private titles: Record<string, string> = {
     '/menu': 'Dashboard',
@@ -54,6 +67,7 @@ export class App {
       const empleado = this.auth.getEmpleado();
       this.userName = empleado?.nombre || 'Usuario';
       this.fechaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      this.loadPrivileges();
     }
 
     this.router.events.pipe(
@@ -66,6 +80,26 @@ export class App {
         const empleado = this.auth.getEmpleado();
         this.userName = empleado?.nombre || 'Usuario';
       }
+    });
+  }
+
+  private loadPrivileges() {
+    const cachedPrivilegios = localStorage.getItem('privilegios');
+    const cachedCampos = localStorage.getItem('campos');
+    if (cachedPrivilegios && cachedCampos) {
+      this.filterMenu(JSON.parse(cachedCampos));
+    }
+    this.auth.fetchMyPrivileges().subscribe({
+      next: () => this.filterMenu(this.auth.getCampos()),
+      error: () => {},
+    });
+  }
+
+  private filterMenu(campos: string[]) {
+    this.menuItems = this.allMenuItems.filter(item => {
+      if (item.label === 'Dashboard') return true;
+      const campo = this.menuCampoMap[item.label];
+      return campo ? campos.includes(campo) : false;
     });
   }
 
